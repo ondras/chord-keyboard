@@ -128,6 +128,11 @@ var ChordTypes = {
     0,
     3,
     6
+  ],
+  "augmented": [
+    0,
+    4,
+    8
   ]
 };
 var NOTES = [
@@ -150,13 +155,13 @@ function noteToNumber(note) {
 function numberToNote(number) {
   return NOTES[number % NOTES.length];
 }
-var SCALE_MAJOR = [
+var SCALE_MINOR_HARMONIC = [
   0,
   2,
-  4,
+  3,
   5,
   7,
-  9,
+  8,
   11
 ];
 function findChordType(numbers) {
@@ -300,14 +305,16 @@ function generateTriads(octave, root, type) {
     2,
     4
   ];
-  return SCALE_MAJOR.map((majorNote, scaleIndex, allNotes) => {
+  return SCALE_MINOR_HARMONIC.map((majorNote, scaleIndex, allNotes) => {
     let chord = new Chord();
-    chord.root = numberToNote(majorNote);
+    chord.root = numberToNote((majorNote + base) % 12);
     let notes = triadOffsetsInScale.map((triadOffset) => {
       let index = scaleIndex + triadOffset;
       let tone = allNotes[index % allNotes.length];
       return (tone + 12 - majorNote) % 12;
     });
+    console.log("majorNote", majorNote);
+    console.log("notes", notes);
     chord.type = findChordType(notes);
     return chord;
   });

@@ -1,6 +1,6 @@
 import App from "./app.ts";
 import Chord from "./chord.ts";
-import { noteToNumber, numberToNote, Note, SCALE_MAJOR, findChordType } from "./music.ts";
+import { noteToNumber, numberToNote, Note, SCALE_MAJOR, SCALE_MINOR_NATURAL, SCALE_MINOR_HARMONIC, findChordType } from "./music.ts";
 
 
 type LayoutType = "fifths" | "major-triads";
@@ -68,15 +68,18 @@ function generateTriads(octave: number, root: Note, type: "major" | "minor") {
 	let base = noteToNumber(root);
 	let triadOffsetsInScale = [0, 2, 4];
 
-	return SCALE_MAJOR.map((majorNote, scaleIndex, allNotes) => {
+	return SCALE_MINOR_HARMONIC.map((majorNote, scaleIndex, allNotes) => {
 		let chord = new Chord();
-		chord.root = numberToNote(majorNote);
+		chord.root = numberToNote((majorNote + base) % 12);
 
 		let notes = triadOffsetsInScale.map(triadOffset => {
 			let index = (scaleIndex + triadOffset);
 			let tone = allNotes[index % allNotes.length];
 			return (tone + 12 - majorNote) % 12;
 		});
+
+		console.log("majorNote", majorNote);
+		console.log("notes", notes);
 
 		chord.type = findChordType(notes)
 
