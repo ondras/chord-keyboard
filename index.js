@@ -113,6 +113,26 @@ var App = class extends HTMLElement {
 };
 
 // music.ts
+var NOTES = [
+  "A",
+  "B\u266D",
+  "B",
+  "C",
+  "C\u266F",
+  "D",
+  "D\u266F",
+  "E",
+  "F",
+  "F\u266F",
+  "G",
+  "G\u266F"
+];
+function noteToNumber(note) {
+  return NOTES.indexOf(note);
+}
+function numberToNote(number) {
+  return NOTES[number % NOTES.length];
+}
 var ChordTypes = {
   "major": [
     0,
@@ -135,26 +155,6 @@ var ChordTypes = {
     8
   ]
 };
-var NOTES = [
-  "A",
-  "B\u266D",
-  "B",
-  "C",
-  "C\u266F",
-  "D",
-  "D\u266F",
-  "E",
-  "F",
-  "F\u266F",
-  "G",
-  "G\u266F"
-];
-function noteToNumber(note) {
-  return NOTES.indexOf(note);
-}
-function numberToNote(number) {
-  return NOTES[number % NOTES.length];
-}
 var SCALE_MINOR_HARMONIC = [
   0,
   2,
@@ -165,7 +165,8 @@ var SCALE_MINOR_HARMONIC = [
   11
 ];
 function findChordType(numbers) {
-  for (let type in ChordTypes) {
+  let type;
+  for (type in ChordTypes) {
     if (ChordTypes[type].join(",") == numbers.join(",")) {
       return type;
     }
@@ -181,7 +182,7 @@ var ATTRIBUTES = [
 ];
 var DEFAULT_ROOT = "C";
 var DEFAULT_TYPE = "major";
-var DEFAULT_OCTAVE = 5;
+var DEFAULT_OCTAVE = 4;
 var Chord = class extends HTMLElement {
   get app() {
     return this.closest("ck-app");
@@ -219,13 +220,9 @@ var Chord = class extends HTMLElement {
     this.updateLabel();
   }
   get notes() {
-    let base = this.octave * 12;
+    let base = (this.octave + 1) * 12;
     base += noteToNumber(this.root);
-    return [
-      0,
-      4,
-      7
-    ].map((note) => note + base);
+    return ChordTypes[this.type].map((note) => note + base);
   }
   updateLabel() {
     this.textContent = `(${this.octave}) ${this.root} ${this.type}`;
@@ -239,8 +236,8 @@ var ATTRIBUTES2 = [
   "type"
 ];
 var DEFAULT_ROOT2 = "C";
-var DEFAULT_TYPE2 = "major-triads";
-var DEFAULT_OCTAVE2 = 5;
+var DEFAULT_TYPE2 = "fifths";
+var DEFAULT_OCTAVE2 = 4;
 var Layout = class extends HTMLElement {
   get app() {
     return this.closest("ck-layout");
@@ -279,7 +276,11 @@ var Layout = class extends HTMLElement {
     let chords;
     switch (this.type) {
       case "fifths":
-        chords = generateFifths(this.octave, this.root);
+        let secondaryRoot = numberToNote(noteToNumber(this.root) + 9);
+        chords = [
+          ...generateFifths(this.octave, this.root, "major"),
+          ...generateFifths(this.octave, secondaryRoot, "minor")
+        ];
         break;
       case "major-triads":
         chords = generateTriads(this.octave, this.root, "major");
@@ -288,13 +289,15 @@ var Layout = class extends HTMLElement {
     this.replaceChildren(...chords);
   }
 };
-function generateFifths(octave, root) {
+function generateFifths(octave, root, type) {
   let base = noteToNumber(root);
   let offsets = new Array(12).fill(0).map((_, i) => 5 * i);
-  return offsets.map((offset) => {
+  return offsets.map((offset, index) => {
     let chord = new Chord();
     chord.octave = octave;
+    chord.type = type;
     chord.root = numberToNote(base + offset);
+    chord.style.setProperty("--index", String(index));
     return chord;
   });
 }

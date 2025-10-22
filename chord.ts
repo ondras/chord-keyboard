@@ -1,5 +1,5 @@
 import App from "./app.ts";
-import { ChordType, Note, noteToNumber } from "./music.ts";
+import { ChordType, ChordTypes, Note, noteToNumber } from "./music.ts";
 
 
 const ATTRIBUTES = ["root", "octave", "type"] as const;
@@ -7,7 +7,7 @@ const ATTRIBUTES = ["root", "octave", "type"] as const;
 
 const DEFAULT_ROOT: Note = "C";
 const DEFAULT_TYPE: ChordType = "major";
-const DEFAULT_OCTAVE = 5;
+const DEFAULT_OCTAVE = 4;
 
 export default class Chord extends HTMLElement {
 	get app() { return this.closest<App>("ck-app")!; }
@@ -38,10 +38,10 @@ export default class Chord extends HTMLElement {
 		this.updateLabel();
 	}
 
-	get notes() {
-		let base = this.octave*12;
+	get notes(): number[] {
+		let base = (this.octave+1)*12;
 		base += noteToNumber(this.root);
-		return [0, 4, 7].map(note => note + base);
+		return ChordTypes[this.type].map(note => note + base);
 	}
 
 	protected updateLabel() {

@@ -1,6 +1,6 @@
 import App from "./app.ts";
 import Chord from "./chord.ts";
-import { noteToNumber, numberToNote, Note, SCALE_MAJOR, SCALE_MINOR_NATURAL, SCALE_MINOR_HARMONIC, findChordType } from "./music.ts";
+import { noteToNumber, numberToNote, Note, SCALE_MAJOR, SCALE_MINOR_NATURAL, SCALE_MINOR_HARMONIC, ChordType, findChordType } from "./music.ts";
 
 
 type LayoutType = "fifths" | "major-triads";
@@ -8,8 +8,8 @@ const ATTRIBUTES = ["root", "octave", "type"] as const;
 
 
 const DEFAULT_ROOT = "C";
-const DEFAULT_TYPE: LayoutType = "major-triads";
-const DEFAULT_OCTAVE = 5;
+const DEFAULT_TYPE: LayoutType = "fifths";
+const DEFAULT_OCTAVE = 4;
 
 export default class Layout extends HTMLElement {
 	get app() { return this.closest<App>("ck-layout")!; }
@@ -41,7 +41,11 @@ export default class Layout extends HTMLElement {
 		let chords: Chord[];
 		switch (this.type) {
 			case "fifths":
-				chords = generateFifths(this.octave, this.root);
+				let secondaryRoot = numberToNote(noteToNumber(this.root) + 9);
+				chords = [
+					...generateFifths(this.octave, this.root, "major"),
+					...generateFifths(this.octave, secondaryRoot, "minor")
+				];
 			break;
 
 			case "major-triads":
@@ -52,13 +56,15 @@ export default class Layout extends HTMLElement {
 	}
 }
 
-function generateFifths(octave: number, root: Note) {
+function generateFifths(octave: number, root: Note, type: ChordType) {
 	let base = noteToNumber(root);
 	let offsets = new Array(12).fill(0).map((_, i) => 5*i);
-	return offsets.map(offset => {
+	return offsets.map((offset, index) => {
 		let chord = new Chord();
 		chord.octave = octave;
+		chord.type = type;
 		chord.root = numberToNote(base + offset);
+		chord.style.setProperty("--index", String(index));
 		return chord;
 	});
 }

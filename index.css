@@ -1,0 +1,29 @@
+ck-app {
+}
+
+ck-chord {
+	border: 1px solid black;
+	font-family: sans-serif;
+	font-size: 14px;
+}
+
+ck-layout {
+	display: block;
+	container-type: size;
+	width: 80vw;
+	height: 80vh;
+	background-color: salmon;
+	position: relative;
+
+		ck-chord {
+			position: absolute;
+			--angle: calc(360deg/12 * var(--index) - 90deg);
+			left: calc(50cqw + cos(var(--angle)) * var(--r));
+			top: calc(50cqh + sin(var(--angle)) * var(--r));
+			transform: translate(-50%, -50%);
+
+			&[type=major] { --r: 50cqmin; }
+			&[type=minor] { --r: 30cqmin; }
+		}
+}
+
