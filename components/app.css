@@ -1,0 +1,44 @@
+ck-app {
+	display: flex;
+	container: app / size;
+	width: 100%;
+	height: 100%;
+	max-width: 800px;
+	max-height: 800px;
+	user-select: none;
+
+	@media (orientation: landscape) {
+		flex-direction: row;
+	}
+
+	@media (orientation: portrait) {
+		flex-direction: column;
+	}
+
+	main {
+		flex: auto;
+		@container app (orientation: portrait) { overflow-y: auto; }
+		@container app (orientation: landscape) { overflow-x: auto; }
+	}
+
+	nav {
+		flex: none;
+		display: flex;
+
+		a {
+			flex: 1 1 0;
+			border: 1px solid black;
+		}
+
+		@media (orientation: landscape) {
+			flex-direction: column;
+			width: 30cqh;
+		}
+
+		@media (orientation: portrait) {
+			flex-direction: row;
+			height: 30cqw;
+		}
+
+	}
+}

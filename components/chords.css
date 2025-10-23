@@ -1,0 +1,15 @@
+ck-chords {
+	height: 100%;
+	display: flex;
+
+	@container app (orientation: portrait) { flex-direction: column; }
+	@container app (orientation: landscape) { flex-direction: row; }
+
+	header {
+		flex: none;
+	}
+
+	ck-layout {
+		flex: auto;
+	}
+}

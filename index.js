@@ -1,11 +1,11 @@
-// midi.ts
+// components/midi.ts
 var NOTE_ON = 144;
 var NOTE_OFF = 128;
 function noteNumberToFrequency(n) {
   return 440 * 2 ** ((n - 69) / 12);
 }
 
-// synth.ts
+// components/synth.ts
 var ATTACK = 0.05;
 var RELEASE = 0.05;
 var Synth = class extends EventTarget {
@@ -84,35 +84,89 @@ function destroyOscillator(audioNodes) {
   oscillator.stop(currentTime + RELEASE);
 }
 
-// app.ts
+// components/app.ts
 var channel = 0;
 var App = class extends HTMLElement {
   output = new Synth();
+  playingNotes = /* @__PURE__ */ new Map();
+  get fav() {
+    return this.querySelector("ck-fav");
+  }
+  get song() {
+    return this.querySelector("ck-song");
+  }
+  get chords() {
+    return this.querySelector("ck-chords");
+  }
+  constructor() {
+    super();
+    window.addEventListener("hashchange", (_) => this.loadState());
+  }
+  connectedCallback() {
+    this.innerHTML = HTML;
+    this.loadState();
+  }
   play(chord) {
-    const { output } = this;
-    chord.notes.forEach((note) => {
+    chord.notes.forEach((note) => this.playNote(note));
+  }
+  stop(chord) {
+    chord.notes.forEach((note) => this.stopNote(note));
+  }
+  playNote(note) {
+    const { playingNotes, output } = this;
+    let current = playingNotes.get(note) || 0;
+    if (!current) {
       let midiMessage = [
         NOTE_ON + channel,
         note,
         100
       ];
       output.send(midiMessage);
-    });
+    }
+    current++;
+    playingNotes.set(note, current);
   }
-  stop(chord) {
-    const { output } = this;
-    chord.notes.forEach((note) => {
+  stopNote(note) {
+    const { playingNotes, output } = this;
+    let current = playingNotes.get(note) || 0;
+    if (!current) {
+      return;
+    }
+    current--;
+    playingNotes.set(note, current);
+    if (!current) {
       let midiMessage = [
         NOTE_OFF + channel,
         note,
         100
       ];
       output.send(midiMessage);
-    });
+    }
+  }
+  loadState() {
+    let name = location.hash.substring(1) || "chords";
+    let modules = {
+      fav: this.fav,
+      song: this.song,
+      chords: this.chords
+    };
+    Object.entries(modules).forEach(([key, module]) => module.hidden = key != name);
   }
 };
+var HTML = `
+<main>
+	<ck-chords></ck-chords>
+	<ck-song></ck-song>
+	<ck-fav></ck-fav>
+</main>
+<nav>
+	<a href="#chords">\u{1F3B9} Chords</a>
+	<a href="#song">\u{1F3B6} Song</a>
+	<a href="#fav">\u2B50 Favorites</a>
+</nav>
+`;
 
-// music.ts
+// components/music.ts
 var NOTES = [
   "A",
   "B\u266D",
@@ -174,7 +228,7 @@ function findChordType(numbers) {
   throw new Error("FIXME");
 }
 
-// chord.ts
+// components/chord.ts
 var ATTRIBUTES = [
   "root",
   "octave",
@@ -210,8 +264,7 @@ var Chord = class extends HTMLElement {
   }
   constructor() {
     super();
-    this.addEventListener("pointerdown", (e) => this.app.play(this));
-    this.addEventListener("pointerup", (e) => this.app.stop(this));
+    this.addEventListener("pointerdown", (e) => this.onPointerDown(e));
   }
   connectedCallback() {
     this.updateLabel();
@@ -224,19 +277,33 @@ var Chord = class extends HTMLElement {
     base += noteToNumber(this.root);
     return ChordTypes[this.type].map((note) => note + base);
   }
+  onPointerDown(e) {
+    let ac = new AbortController();
+    let { signal } = ac;
+    let abort = () => {
+      ac.abort();
+      this.app.stop(this);
+    };
+    this.addEventListener("pointerup", abort, {
+      signal
+    });
+    this.addEventListener("pointerleave", abort, {
+      signal
+    });
+    this.app.play(this);
+  }
   updateLabel() {
     this.textContent = `(${this.octave}) ${this.root} ${this.type}`;
   }
 };
 
-// layout.ts
+// components/layout.ts
 var ATTRIBUTES2 = [
   "root",
   "octave",
   "type"
 ];
 var DEFAULT_ROOT2 = "C";
-var DEFAULT_TYPE2 = "fifths";
 var DEFAULT_OCTAVE2 = 4;
 var Layout = class extends HTMLElement {
   get app() {
@@ -258,7 +325,7 @@ var Layout = class extends HTMLElement {
     this.setAttribute("root", root);
   }
   get type() {
-    return this.getAttribute("type") || DEFAULT_TYPE2;
+    return this.getAttribute("type");
   }
   set type(type) {
     this.setAttribute("type", type);
@@ -273,7 +340,7 @@ var Layout = class extends HTMLElement {
     this.generate();
   }
   generate() {
-    let chords;
+    let chords = [];
     switch (this.type) {
       case "fifths":
         let secondaryRoot = numberToNote(noteToNumber(this.root) + 9);
@@ -282,8 +349,11 @@ var Layout = class extends HTMLElement {
           ...generateFifths(this.octave, secondaryRoot, "minor")
         ];
         break;
-      case "major-triads":
+      case "triads-major":
         chords = generateTriads(this.octave, this.root, "major");
+        break;
+      case "triads-minor":
+        chords = generateTriads(this.octave, this.root, "minor");
         break;
     }
     this.replaceChildren(...chords);
@@ -311,19 +381,55 @@ function generateTriads(octave, root, type) {
   return SCALE_MINOR_HARMONIC.map((majorNote, scaleIndex, allNotes) => {
     let chord = new Chord();
     chord.root = numberToNote((majorNote + base) % 12);
+    chord.octave = octave;
     let notes = triadOffsetsInScale.map((triadOffset) => {
       let index = scaleIndex + triadOffset;
       let tone = allNotes[index % allNotes.length];
       return (tone + 12 - majorNote) % 12;
     });
-    console.log("majorNote", majorNote);
-    console.log("notes", notes);
     chord.type = findChordType(notes);
     return chord;
   });
 }
 
+// components/chords.ts
+var Chords = class extends HTMLElement {
+  layout = new Layout();
+  buttons = {
+    fifths: document.createElement("button"),
+    triadsMajor: document.createElement("button"),
+    triadsMinor: document.createElement("button")
+  };
+  constructor() {
+    super();
+    const { buttons } = this;
+    buttons.fifths.textContent = "5ths";
+    buttons.triadsMajor.textContent = "major scale triads";
+    buttons.triadsMinor.textContent = "minor scale triads";
+    buttons.fifths.addEventListener("click", (_) => this.layout.type = "fifths");
+    buttons.triadsMajor.addEventListener("click", (_) => this.layout.type = "triads-major");
+    buttons.triadsMinor.addEventListener("click", (_) => this.layout.type = "triads-minor");
+  }
+  connectedCallback() {
+    const { buttons, layout } = this;
+    let header = document.createElement("header");
+    header.append(buttons.fifths, buttons.triadsMajor, buttons.triadsMinor);
+    this.replaceChildren(header, layout);
+  }
+};
+
+// components/fav.ts
+var Fav = class extends HTMLElement {
+};
+
+// components/song.ts
+var Song = class extends HTMLElement {
+};
+
 // index.ts
 customElements.define("ck-app", App);
 customElements.define("ck-chord", Chord);
 customElements.define("ck-layout", Layout);
+customElements.define("ck-chords", Chords);
+customElements.define("ck-fav", Song);
+customElements.define("ck-song", Fav);

@@ -1,29 +1,19 @@
-ck-app {
+@import url("components/app.css");
+@import url("components/chord.css");
+@import url("components/layout.css");
+@import url("components/chords.css");
+@import url("components/fav.css");
+@import url("components/song.css");
+
+* {
+	box-sizing: border-box;
 }
 
-ck-chord {
-	border: 1px solid black;
-	font-family: sans-serif;
-	font-size: 14px;
+body {
+	margin: 0;
+	display: flex;
+	width: 100vw;
+	height: 100vh;
+	justify-content: center;
+	align-items: center;
 }
-
-ck-layout {
-	display: block;
-	container-type: size;
-	width: 80vw;
-	height: 80vh;
-	background-color: salmon;
-	position: relative;
-
-		ck-chord {
-			position: absolute;
-			--angle: calc(360deg/12 * var(--index) - 90deg);
-			left: calc(50cqw + cos(var(--angle)) * var(--r));
-			top: calc(50cqh + sin(var(--angle)) * var(--r));
-			transform: translate(-50%, -50%);
-
-			&[type=major] { --r: 50cqmin; }
-			&[type=minor] { --r: 30cqmin; }
-		}
-}
-

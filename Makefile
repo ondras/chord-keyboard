@@ -1,2 +1,2 @@
-index.js: *.ts
-	deno bundle --platform browser index.ts > $@
+index.js: *.ts components/*.ts
+	deno bundle --check --platform browser index.ts > $@

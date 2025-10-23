@@ -1,0 +1,34 @@
+ck-layout {
+	container: layout / size;
+	background-color: salmon;
+
+	&[type=fifths] {
+		position: relative;
+		ck-chord {
+			position: absolute;
+			--angle: calc(360deg/12 * var(--index) - 90deg);
+			left: calc(50cqw + cos(var(--angle)) * var(--r));
+			top: calc(50cqh + sin(var(--angle)) * var(--r));
+			transform: translate(-50%, -50%);
+
+			&[type=major] { --r: 43cqmin; }
+			&[type=minor] { --r: 29cqmin; }
+		}
+	}
+
+	&[type^=triads] {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: start;
+		align-content: start;
+		--pad: 8px;
+		padding: var(--pad);
+		gap: var(--pad);
+	}
+}
+
+/*
+  min display with 384px, chord 48px ->
+    major --r = 43cqmin
+	minor --r = 29cqmin
+*/

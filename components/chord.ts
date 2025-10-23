@@ -26,8 +26,7 @@ export default class Chord extends HTMLElement {
 
 	constructor() {
 		super();
-		this.addEventListener("pointerdown", e => this.app.play(this))
-		this.addEventListener("pointerup", e => this.app.stop(this));
+		this.addEventListener("pointerdown", e => this.onPointerDown(e));
 	}
 
 	connectedCallback() {
@@ -42,6 +41,18 @@ export default class Chord extends HTMLElement {
 		let base = (this.octave+1)*12;
 		base += noteToNumber(this.root);
 		return ChordTypes[this.type].map(note => note + base);
+	}
+
+	protected onPointerDown(e: PointerEvent) {
+		let ac = new AbortController();
+		let { signal } = ac;
+		let abort = () => {
+			ac.abort();
+			this.app.stop(this);
+		}
+		this.addEventListener("pointerup", abort, {signal})
+		this.addEventListener("pointerleave", abort, {signal})
+		this.app.play(this);
 	}
 
 	protected updateLabel() {
