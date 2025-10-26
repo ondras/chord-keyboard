@@ -1,34 +1,47 @@
 ck-layout {
 	container: layout / size;
-	background-color: salmon;
 
 	&[type=fifths] {
 		position: relative;
+		--sx: 1;
+		--sy: 1;
+
+		@container app (orientation: portrait) {
+			--sy: calc((100cqh - var(--nav-size)) / 100cqw) * 0.8;
+		}
+
+		@container app (orientation: landscape) {
+			--sy: calc((100cqw - var(--nav-size)) / 100cqh) * 0.8;
+		}
+
 		ck-chord {
 			position: absolute;
 			--angle: calc(360deg/12 * var(--index) - 90deg);
-			left: calc(50cqw + cos(var(--angle)) * var(--r));
-			top: calc(50cqh + sin(var(--angle)) * var(--r));
+			--dx: cos(var(--angle)) * var(--r) * var(--sx);
+			--dy: sin(var(--angle)) * var(--r) * var(--sy);
+
+			left: calc(50cqw + var(--dx));
+			top: calc(50cqh + var(--dy));
 			transform: translate(-50%, -50%);
 
 			&[type=major] { --r: 43cqmin; }
-			&[type=minor] { --r: 29cqmin; }
+			&[type=minor] { --r: 28cqmin; }
 		}
 	}
 
 	&[type^=triads] {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: start;
-		align-content: start;
-		--pad: 8px;
-		padding: var(--pad);
-		gap: var(--pad);
+
+		@container app (orientation: portrait) { flex-direction: column; }
+		@container app (orientation: landscape) { flex-direction: row; }
+
+		align-items: center;
+		justify-content: space-evenly;
 	}
 }
 
 /*
   min display with 384px, chord 48px ->
     major --r = 43cqmin
-	minor --r = 29cqmin
+	minor --r = 28cqmin
 */

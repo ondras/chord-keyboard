@@ -7,6 +7,8 @@ ck-app {
 	max-height: 800px;
 	user-select: none;
 
+	--nav-size: 64px;
+
 	@media (orientation: landscape) {
 		flex-direction: row;
 	}
@@ -22,7 +24,7 @@ ck-app {
 	}
 
 	nav {
-		flex: none;
+		flex: 0 0 var(--nav-size);
 		display: flex;
 
 		a {
@@ -32,12 +34,10 @@ ck-app {
 
 		@media (orientation: landscape) {
 			flex-direction: column;
-			width: 30cqh;
 		}
 
 		@media (orientation: portrait) {
 			flex-direction: row;
-			height: 30cqw;
 		}
 
 	}

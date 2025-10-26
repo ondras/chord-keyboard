@@ -3,8 +3,7 @@ import Chord from "./chord.ts";
 import { noteToNumber, numberToNote, Note, SCALE_MAJOR, SCALE_MINOR_NATURAL, SCALE_MINOR_HARMONIC, ChordType, findChordType } from "./music.ts";
 
 
-type LayoutType = "fifths" | "triads-major" | "triads-minor";
-const ATTRIBUTES = ["root", "octave", "type"] as const;
+type LayoutType = "fifths" | "triads-major" | "triads-minor-natural" | "triads-minor-harmonic";
 
 
 const DEFAULT_ROOT = "C";
@@ -13,7 +12,7 @@ const DEFAULT_OCTAVE = 4;
 export default class Layout extends HTMLElement {
 	get app() { return this.closest<App>("ck-layout")!; }
 
-	static get observedAttributes() { return ATTRIBUTES; }
+	static get observedAttributes() { return ["root", "octave", "type"]; }
 
 	get octave() { return Number(this.getAttribute("octave")) || DEFAULT_OCTAVE; }
 	set octave(octave: number) {this.setAttribute("octave", String(octave)); }
@@ -52,8 +51,12 @@ export default class Layout extends HTMLElement {
 				chords = generateTriads(this.octave, this.root, "major");
 			break;
 
-			case "triads-minor":
-				chords = generateTriads(this.octave, this.root, "minor");
+			case "triads-minor-natural":
+				chords = generateTriads(this.octave, this.root, "minor-natural");
+			break;
+
+			case "triads-minor-harmonic":
+				chords = generateTriads(this.octave, this.root, "minor-harmonic");
 			break;
 		}
 		this.replaceChildren(...chords);
@@ -73,11 +76,18 @@ function generateFifths(octave: number, root: Note, type: ChordType) {
 	});
 }
 
-function generateTriads(octave: number, root: Note, type: "major" | "minor") {
+function generateTriads(octave: number, root: Note, type: "major" | "minor-natural" | "minor-harmonic") {
 	let base = noteToNumber(root);
 	let triadOffsetsInScale = [0, 2, 4];
 
-	return SCALE_MINOR_HARMONIC.map((majorNote, scaleIndex, allNotes) => {
+	let scale: number[];
+	switch (type) {
+		case "major": scale = SCALE_MAJOR; break;
+		case "minor-natural": scale = SCALE_MINOR_NATURAL; break;
+		case "minor-harmonic": scale = SCALE_MINOR_HARMONIC; break;
+	}
+
+	return scale.map((majorNote, scaleIndex, allNotes) => {
 		let chord = new Chord();
 		chord.root = numberToNote((majorNote + base) % 12);
 		chord.octave = octave;

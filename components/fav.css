@@ -1,3 +1,4 @@
 ck-fav {
+	&:not([hidden]) { display: block; }
 
 }

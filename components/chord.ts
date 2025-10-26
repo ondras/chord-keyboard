@@ -2,9 +2,6 @@ import App from "./app.ts";
 import { ChordType, ChordTypes, Note, noteToNumber } from "./music.ts";
 
 
-const ATTRIBUTES = ["root", "octave", "type"] as const;
-
-
 const DEFAULT_ROOT: Note = "C";
 const DEFAULT_TYPE: ChordType = "major";
 const DEFAULT_OCTAVE = 4;
@@ -12,7 +9,7 @@ const DEFAULT_OCTAVE = 4;
 export default class Chord extends HTMLElement {
 	get app() { return this.closest<App>("ck-app")!; }
 
-	static get observedAttributes() { return ATTRIBUTES; }
+	static get observedAttributes() { return ["root", "octave", "type"]; }
 
 	get octave() { return Number(this.getAttribute("octave")) || DEFAULT_OCTAVE; }
 	set octave(octave: number) {this.setAttribute("octave", String(octave)); }
@@ -27,6 +24,7 @@ export default class Chord extends HTMLElement {
 	constructor() {
 		super();
 		this.addEventListener("pointerdown", e => this.onPointerDown(e));
+		this.addEventListener("click", e => this.onClick());
 	}
 
 	connectedCallback() {
@@ -43,7 +41,16 @@ export default class Chord extends HTMLElement {
 		return ChordTypes[this.type].map(note => note + base);
 	}
 
+	protected onClick() {
+		const { app } = this;
+		if (app.mode == "play") { return; }
+		app.toggleMenu(this);
+	}
+
 	protected onPointerDown(e: PointerEvent) {
+		const { app } = this;
+		if (app.mode != "play") { return; }
+
 		let ac = new AbortController();
 		let { signal } = ac;
 		let abort = () => {

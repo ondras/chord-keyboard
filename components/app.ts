@@ -4,17 +4,29 @@ import Chords from "./chords.ts";
 import Chord from "./chord.ts";
 import Synth from "./synth.ts";
 import * as midi from "./midi.ts";
+import Menu from "./menu.ts";
 
 
 const channel = 0;
 
+type Mode = "play" | "edit" | "organize";
+const DEFAULT_MODE: Mode = "play";
+
+
 export default class App extends HTMLElement {
+	static get observedAttributes() { return ["mode"]; }
+
 	protected output: MIDIOutput = new Synth();
 	protected playingNotes = new Map<number, number>();
 
 	protected get fav() { return this.querySelector<Fav>("ck-fav")!; }
 	protected get song() { return this.querySelector<Song>("ck-song")!; }
 	protected get chords() { return this.querySelector<Chords>("ck-chords")!; }
+
+	protected get menu() { return this.querySelector<Menu>("ck-menu")!; }
+
+	get mode(): Mode { return this.getAttribute("mode") as Mode || DEFAULT_MODE; }
+	set mode(mode: Mode) {this.setAttribute("mode", mode); }
 
 	constructor() {
 		super();
@@ -32,6 +44,10 @@ export default class App extends HTMLElement {
 
 	stop(chord: Chord) {
 		chord.notes.forEach(note => this.stopNote(note));
+	}
+
+	toggleMenu(chord: Chord) {
+		this.menu.showPopover({source:chord});
 	}
 
 	protected playNote(note: number) {
@@ -84,4 +100,5 @@ const HTML = `
 	<a href="#song">🎶 Song</a>
 	<a href="#fav">⭐ Favorites</a>
 </nav>
+<ck-menu></ck-menu>
 `;

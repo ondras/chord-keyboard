@@ -86,7 +86,13 @@ function destroyOscillator(audioNodes) {
 
 // components/app.ts
 var channel = 0;
+var DEFAULT_MODE = "play";
 var App = class extends HTMLElement {
+  static get observedAttributes() {
+    return [
+      "mode"
+    ];
+  }
   output = new Synth();
   playingNotes = /* @__PURE__ */ new Map();
   get fav() {
@@ -97,6 +103,15 @@ var App = class extends HTMLElement {
   }
   get chords() {
     return this.querySelector("ck-chords");
+  }
+  get menu() {
+    return this.querySelector("ck-menu");
+  }
+  get mode() {
+    return this.getAttribute("mode") || DEFAULT_MODE;
+  }
+  set mode(mode) {
+    this.setAttribute("mode", mode);
   }
   constructor() {
     super();
@@ -111,6 +126,11 @@ var App = class extends HTMLElement {
   }
   stop(chord) {
     chord.notes.forEach((note) => this.stopNote(note));
+  }
+  toggleMenu(chord) {
+    this.menu.showPopover({
+      source: chord
+    });
   }
   playNote(note) {
     const { playingNotes, output } = this;
@@ -164,6 +184,7 @@ var HTML = `
 	<a href="#song">\u{1F3B6} Song</a>
 	<a href="#fav">\u2B50 Favorites</a>
 </nav>
+<ck-menu></ck-menu>
 `;
 
 // components/music.ts
@@ -209,6 +230,24 @@ var ChordTypes = {
     8
   ]
 };
+var SCALE_MAJOR = [
+  0,
+  2,
+  4,
+  5,
+  7,
+  9,
+  11
+];
+var SCALE_MINOR_NATURAL = [
+  0,
+  2,
+  3,
+  5,
+  7,
+  8,
+  10
+];
 var SCALE_MINOR_HARMONIC = [
   0,
   2,
@@ -229,11 +268,6 @@ function findChordType(numbers) {
 }
 
 // components/chord.ts
-var ATTRIBUTES = [
-  "root",
-  "octave",
-  "type"
-];
 var DEFAULT_ROOT = "C";
 var DEFAULT_TYPE = "major";
 var DEFAULT_OCTAVE = 4;
@@ -242,7 +276,11 @@ var Chord = class extends HTMLElement {
     return this.closest("ck-app");
   }
   static get observedAttributes() {
-    return ATTRIBUTES;
+    return [
+      "root",
+      "octave",
+      "type"
+    ];
   }
   get octave() {
     return Number(this.getAttribute("octave")) || DEFAULT_OCTAVE;
@@ -265,6 +303,7 @@ var Chord = class extends HTMLElement {
   constructor() {
     super();
     this.addEventListener("pointerdown", (e) => this.onPointerDown(e));
+    this.addEventListener("click", (e) => this.onClick());
   }
   connectedCallback() {
     this.updateLabel();
@@ -277,7 +316,18 @@ var Chord = class extends HTMLElement {
     base += noteToNumber(this.root);
     return ChordTypes[this.type].map((note) => note + base);
   }
+  onClick() {
+    const { app } = this;
+    if (app.mode == "play") {
+      return;
+    }
+    app.toggleMenu(this);
+  }
   onPointerDown(e) {
+    const { app } = this;
+    if (app.mode != "play") {
+      return;
+    }
     let ac = new AbortController();
     let { signal } = ac;
     let abort = () => {
@@ -298,11 +348,6 @@ var Chord = class extends HTMLElement {
 };
 
 // components/layout.ts
-var ATTRIBUTES2 = [
-  "root",
-  "octave",
-  "type"
-];
 var DEFAULT_ROOT2 = "C";
 var DEFAULT_OCTAVE2 = 4;
 var Layout = class extends HTMLElement {
@@ -310,7 +355,11 @@ var Layout = class extends HTMLElement {
     return this.closest("ck-layout");
   }
   static get observedAttributes() {
-    return ATTRIBUTES2;
+    return [
+      "root",
+      "octave",
+      "type"
+    ];
   }
   get octave() {
     return Number(this.getAttribute("octave")) || DEFAULT_OCTAVE2;
@@ -352,8 +401,11 @@ var Layout = class extends HTMLElement {
       case "triads-major":
         chords = generateTriads(this.octave, this.root, "major");
         break;
-      case "triads-minor":
-        chords = generateTriads(this.octave, this.root, "minor");
+      case "triads-minor-natural":
+        chords = generateTriads(this.octave, this.root, "minor-natural");
+        break;
+      case "triads-minor-harmonic":
+        chords = generateTriads(this.octave, this.root, "minor-harmonic");
         break;
     }
     this.replaceChildren(...chords);
@@ -378,7 +430,19 @@ function generateTriads(octave, root, type) {
     2,
     4
   ];
-  return SCALE_MINOR_HARMONIC.map((majorNote, scaleIndex, allNotes) => {
+  let scale;
+  switch (type) {
+    case "major":
+      scale = SCALE_MAJOR;
+      break;
+    case "minor-natural":
+      scale = SCALE_MINOR_NATURAL;
+      break;
+    case "minor-harmonic":
+      scale = SCALE_MINOR_HARMONIC;
+      break;
+  }
+  return scale.map((majorNote, scaleIndex, allNotes) => {
     let chord = new Chord();
     chord.root = numberToNote((majorNote + base) % 12);
     chord.octave = octave;
@@ -395,28 +459,39 @@ function generateTriads(octave, root, type) {
 // components/chords.ts
 var Chords = class extends HTMLElement {
   layout = new Layout();
-  buttons = {
-    fifths: document.createElement("button"),
-    triadsMajor: document.createElement("button"),
-    triadsMinor: document.createElement("button")
-  };
-  constructor() {
-    super();
-    const { buttons } = this;
-    buttons.fifths.textContent = "5ths";
-    buttons.triadsMajor.textContent = "major scale triads";
-    buttons.triadsMinor.textContent = "minor scale triads";
-    buttons.fifths.addEventListener("click", (_) => this.layout.type = "fifths");
-    buttons.triadsMajor.addEventListener("click", (_) => this.layout.type = "triads-major");
-    buttons.triadsMinor.addEventListener("click", (_) => this.layout.type = "triads-minor");
+  header = document.createElement("header");
+  get layoutSelect() {
+    return this.querySelector("header [name=layout]");
+  }
+  get rootSelect() {
+    return this.querySelector("header [name=root]");
   }
   connectedCallback() {
-    const { buttons, layout } = this;
-    let header = document.createElement("header");
-    header.append(buttons.fifths, buttons.triadsMajor, buttons.triadsMinor);
+    const { header, layout } = this;
     this.replaceChildren(header, layout);
+    header.innerHTML = HEADER_HTML;
+    const { layoutSelect, rootSelect } = this;
+    layoutSelect.addEventListener("change", (_) => {
+      layout.type = layoutSelect.value;
+      layoutSelect.value = "";
+    });
+    let options = NOTES.map((note) => new Option(note));
+    rootSelect.append(...options);
+    rootSelect.value = layout.root;
+    rootSelect.addEventListener("change", (_) => layout.root = rootSelect.value);
   }
 };
+var HEADER_HTML = `
+<select name="layout">
+  <option value="" selected>Fill with&hellip;</option>
+  <option value="fifths">Circle of fifths</option>
+  <option value="triads-major">Maj scale triads</option>
+  <option value="triads-minor-natural">Min scale triads natural</option>
+  <option value="triads-minor-harmonic">Min scale triads harmonic</option>
+</select>
+
+<select name="root"></select>
+`;
 
 // components/fav.ts
 var Fav = class extends HTMLElement {
@@ -426,6 +501,17 @@ var Fav = class extends HTMLElement {
 var Song = class extends HTMLElement {
 };
 
+// components/menu.ts
+var Menu = class extends HTMLElement {
+  constructor() {
+    super();
+    this.popover = "auto";
+  }
+  connectedCallback() {
+    this.innerHTML = ":-)";
+  }
+};
+
 // index.ts
 customElements.define("ck-app", App);
 customElements.define("ck-chord", Chord);
@@ -433,3 +519,4 @@ customElements.define("ck-layout", Layout);
 customElements.define("ck-chords", Chords);
 customElements.define("ck-fav", Song);
 customElements.define("ck-song", Fav);
+customElements.define("ck-menu", Menu);

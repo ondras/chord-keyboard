@@ -1,6 +1,6 @@
 ck-chords {
 	height: 100%;
-	display: flex;
+	&:not([hidden]) { display: flex; }
 
 	@container app (orientation: portrait) { flex-direction: column; }
 	@container app (orientation: landscape) { flex-direction: row; }

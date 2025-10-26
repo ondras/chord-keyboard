@@ -1,3 +1,3 @@
 ck-song {
-
+	&:not([hidden]) { display: block; }
 }

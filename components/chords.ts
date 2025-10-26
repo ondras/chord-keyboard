@@ -1,33 +1,43 @@
 import Layout from "./layout.ts";
+import * as music from "./music.ts";
+
+
 
 export default class Chords extends HTMLElement {
 	protected layout = new Layout();
-	protected buttons = {
-		fifths: document.createElement("button"),
-		triadsMajor: document.createElement("button"),
-		triadsMinor: document.createElement("button")
-	}
-
-	constructor() {
-		super();
-
-		const { buttons } = this;
-
-		buttons.fifths.textContent = "5ths";
-		buttons.triadsMajor.textContent = "major scale triads";
-		buttons.triadsMinor.textContent = "minor scale triads";
-
-		buttons.fifths.addEventListener("click", _ => this.layout.type = "fifths");
-		buttons.triadsMajor.addEventListener("click", _ => this.layout.type = "triads-major");
-		buttons.triadsMinor.addEventListener("click", _ => this.layout.type = "triads-minor");
-	}
+	protected header = document.createElement("header");
+	protected get layoutSelect() { return this.querySelector<HTMLSelectElement>("header [name=layout]")!; }
+	protected get rootSelect() { return this.querySelector<HTMLSelectElement>("header [name=root]")!; }
 
 	connectedCallback() {
-		const { buttons, layout } = this;
+		const { header, layout,  } = this;
+		this.replaceChildren(header, layout);
 
-		let header = document.createElement("header");
-		header.append(buttons.fifths, buttons.triadsMajor, buttons.triadsMinor);
+		header.innerHTML = HEADER_HTML;
 
-		this.replaceChildren(header, layout)
+		const { layoutSelect, rootSelect } = this;
+
+		layoutSelect.addEventListener("change", _ => {
+			layout.type = layoutSelect.value as (typeof layout.type);
+			layoutSelect.value = "";
+		});
+
+		let options = music.NOTES.map(note => new Option(note));
+		rootSelect.append(...options);
+		rootSelect.value = layout.root;
+		rootSelect.addEventListener("change", _ => layout.root = rootSelect.value as music.Note)
+
 	}
 }
+
+const HEADER_HTML = `
+<select name="layout">
+  <option value="" selected>Fill with&hellip;</option>
+  <option value="fifths">Circle of fifths</option>
+  <option value="triads-major">Maj scale triads</option>
+  <option value="triads-minor-natural">Min scale triads natural</option>
+  <option value="triads-minor-harmonic">Min scale triads harmonic</option>
+</select>
+
+<select name="root"></select>
+`;

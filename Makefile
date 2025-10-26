@@ -1,2 +1,7 @@
+$ARGS := --check --platform browser
+
 index.js: *.ts components/*.ts
-	deno bundle --check --platform browser index.ts > $@
+	deno bundle $(ARGS) -o $@ index.ts
+
+watch:
+	deno bundle $(ARGS) --watch -o index.js index.ts

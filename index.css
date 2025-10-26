@@ -4,6 +4,7 @@
 @import url("components/chords.css");
 @import url("components/fav.css");
 @import url("components/song.css");
+@import url("components/menu.css");
 
 * {
 	box-sizing: border-box;
