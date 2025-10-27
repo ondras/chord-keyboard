@@ -1,16 +1,16 @@
+import * as midi from "./midi.ts";
 import Song from "./song.ts";
 import Fav from "./fav.ts";
 import Chords from "./chords.ts";
 import Chord from "./chord.ts";
 import Synth from "./synth.ts";
-import * as midi from "./midi.ts";
 import Menu from "./menu.ts";
 
 
 const channel = 0;
 
-type Mode = "play" | "edit" | "organize";
-const DEFAULT_MODE: Mode = "play";
+type Mode = "play" | "edit";
+const DEFAULT_MODE: Mode = "edit";
 
 
 export default class App extends HTMLElement {
@@ -19,14 +19,14 @@ export default class App extends HTMLElement {
 	protected output: MIDIOutput = new Synth();
 	protected playingNotes = new Map<number, number>();
 
-	protected get fav() { return this.querySelector<Fav>("ck-fav")!; }
-	protected get song() { return this.querySelector<Song>("ck-song")!; }
-	protected get chords() { return this.querySelector<Chords>("ck-chords")!; }
+	get fav() { return this.querySelector<Fav>("ck-fav")!; }
+	get song() { return this.querySelector<Song>("ck-song")!; }
+	get chords() { return this.querySelector<Chords>("ck-chords")!; }
 
 	protected get menu() { return this.querySelector<Menu>("ck-menu")!; }
 
 	get mode(): Mode { return this.getAttribute("mode") as Mode || DEFAULT_MODE; }
-	set mode(mode: Mode) {this.setAttribute("mode", mode); }
+	set mode(mode: Mode) { this.setAttribute("mode", mode); }
 
 	constructor() {
 		super();
@@ -47,7 +47,7 @@ export default class App extends HTMLElement {
 	}
 
 	toggleMenu(chord: Chord) {
-		this.menu.showPopover({source:chord});
+		this.menu.toggleForChord(chord);
 	}
 
 	protected playNote(note: number) {
@@ -95,10 +95,11 @@ const HTML = `
 	<ck-song></ck-song>
 	<ck-fav></ck-fav>
 </main>
+<ck-mode>mode</ck-mode>
 <nav>
-	<a href="#chords">🎹 Chords</a>
-	<a href="#song">🎶 Song</a>
-	<a href="#fav">⭐ Favorites</a>
+	<a href="#chords"><span>🎹</span>Chords</a>
+	<a href="#song"><span>🎶</span>Song</a>
+	<a href="#fav"><span>⭐</span>Favorites</a>
 </nav>
 <ck-menu></ck-menu>
 `;

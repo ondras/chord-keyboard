@@ -6,16 +6,13 @@ ck-app {
 	max-width: 800px;
 	max-height: 800px;
 	user-select: none;
+	font-family: sans-serif;
 
 	--nav-size: 64px;
+	--chord-size: 48px;
 
-	@media (orientation: landscape) {
-		flex-direction: row;
-	}
-
-	@media (orientation: portrait) {
-		flex-direction: column;
-	}
+	@media (orientation: landscape) { flex-direction: row; }
+	@media (orientation: portrait) { flex-direction: column; }
 
 	main {
 		flex: auto;
@@ -27,17 +24,22 @@ ck-app {
 		flex: 0 0 var(--nav-size);
 		display: flex;
 
+		@media (orientation: landscape) { flex-direction: column; }
+		@media (orientation: portrait) { flex-direction: row; }
+
 		a {
 			flex: 1 1 0;
 			border: 1px solid black;
-		}
+			text-decoration: none;
 
-		@media (orientation: landscape) {
+			display: flex;
 			flex-direction: column;
-		}
+			align-items: center;
+			justify-content: space-around;
 
-		@media (orientation: portrait) {
-			flex-direction: row;
+			span {
+				font-size: 150%;
+			}
 		}
 
 	}

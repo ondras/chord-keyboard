@@ -86,7 +86,7 @@ function destroyOscillator(audioNodes) {
 
 // components/app.ts
 var channel = 0;
-var DEFAULT_MODE = "play";
+var DEFAULT_MODE = "edit";
 var App = class extends HTMLElement {
   static get observedAttributes() {
     return [
@@ -128,9 +128,7 @@ var App = class extends HTMLElement {
     chord.notes.forEach((note) => this.stopNote(note));
   }
   toggleMenu(chord) {
-    this.menu.showPopover({
-      source: chord
-    });
+    this.menu.toggleForChord(chord);
   }
   playNote(note) {
     const { playingNotes, output } = this;
@@ -179,19 +177,17 @@ var HTML = `
 	<ck-song></ck-song>
 	<ck-fav></ck-fav>
 </main>
+<ck-mode>mode</ck-mode>
 <nav>
-	<a href="#chords">\u{1F3B9} Chords</a>
-	<a href="#song">\u{1F3B6} Song</a>
-	<a href="#fav">\u2B50 Favorites</a>
+	<a href="#chords"><span>\u{1F3B9}</span>Chords</a>
+	<a href="#song"><span>\u{1F3B6}</span>Song</a>
+	<a href="#fav"><span>\u2B50</span>Favorites</a>
 </nav>
 <ck-menu></ck-menu>
 `;
 
 // components/music.ts
 var NOTES = [
-  "A",
-  "B\u266D",
-  "B",
   "C",
   "C\u266F",
   "D",
@@ -200,7 +196,10 @@ var NOTES = [
   "F",
   "F\u266F",
   "G",
-  "G\u266F"
+  "G\u266F",
+  "A",
+  "B\u266D",
+  "B"
 ];
 function noteToNumber(note) {
   return NOTES.indexOf(note);
@@ -303,7 +302,7 @@ var Chord = class extends HTMLElement {
   constructor() {
     super();
     this.addEventListener("pointerdown", (e) => this.onPointerDown(e));
-    this.addEventListener("click", (e) => this.onClick());
+    this.addEventListener("click", (e) => this.onClick(e));
   }
   connectedCallback() {
     this.updateLabel();
@@ -316,7 +315,7 @@ var Chord = class extends HTMLElement {
     base += noteToNumber(this.root);
     return ChordTypes[this.type].map((note) => note + base);
   }
-  onClick() {
+  onClick(e) {
     const { app } = this;
     if (app.mode == "play") {
       return;
@@ -461,16 +460,19 @@ var Chords = class extends HTMLElement {
   layout = new Layout();
   header = document.createElement("header");
   get layoutSelect() {
-    return this.querySelector("header [name=layout]");
+    return this.header.querySelector("[name=layout]");
   }
   get rootSelect() {
-    return this.querySelector("header [name=root]");
+    return this.header.querySelector("[name=root]");
+  }
+  get octaveSelect() {
+    return this.header.querySelector("[name=octave]");
   }
   connectedCallback() {
     const { header, layout } = this;
     this.replaceChildren(header, layout);
     header.innerHTML = HEADER_HTML;
-    const { layoutSelect, rootSelect } = this;
+    const { layoutSelect, rootSelect, octaveSelect } = this;
     layoutSelect.addEventListener("change", (_) => {
       layout.type = layoutSelect.value;
       layoutSelect.value = "";
@@ -479,6 +481,12 @@ var Chords = class extends HTMLElement {
     rootSelect.append(...options);
     rootSelect.value = layout.root;
     rootSelect.addEventListener("change", (_) => layout.root = rootSelect.value);
+    for (let i = 1; i <= 7; i++) {
+      let option = new Option(`Oct. ${i}`, String(i));
+      octaveSelect.append(option);
+    }
+    octaveSelect.value = String(layout.octave);
+    octaveSelect.addEventListener("change", (_) => layout.octave = Number(octaveSelect.value));
   }
 };
 var HEADER_HTML = `
@@ -491,26 +499,93 @@ var HEADER_HTML = `
 </select>
 
 <select name="root"></select>
+
+<select name="octave"></select>
 `;
 
 // components/fav.ts
 var Fav = class extends HTMLElement {
+  addChord(chord) {
+    this.append(chord.cloneNode(true));
+    this.pulse();
+  }
+  removeChord(chord) {
+    chord.remove();
+    this.pulse();
+  }
+  pulse() {
+  }
 };
 
 // components/song.ts
 var Song = class extends HTMLElement {
+  addChord(chord) {
+    this.append(chord.cloneNode(true));
+  }
+  removeChord(chord) {
+    chord.remove();
+  }
 };
 
 // components/menu.ts
 var Menu = class extends HTMLElement {
+  get app() {
+    return this.closest("ck-app");
+  }
+  chord;
+  get fav() {
+    return this.byName("fav");
+  }
+  get song() {
+    return this.byName("song");
+  }
+  get type() {
+    return this.byName("type");
+  }
+  get root() {
+    return this.byName("root");
+  }
+  get octave() {
+    return this.byName("octave");
+  }
+  byName(name) {
+    return this.querySelector(`[name=${name}]`);
+  }
   constructor() {
     super();
     this.popover = "auto";
   }
   connectedCallback() {
-    this.innerHTML = ":-)";
+    this.innerHTML = HTML2;
+    const { app, fav, song, type, root, octave } = this;
+    type.addEventListener("change", (_) => this.chord.type = type.value);
+    root.addEventListener("change", (_) => this.chord.root = root.value);
+    octave.addEventListener("change", (_) => this.chord.octave = Number(octave.value));
+    fav.addEventListener("change", (_) => fav.checked ? app.fav.addChord(this.chord) : app.fav.removeChord(this.chord));
+    song.addEventListener("change", (_) => song.checked ? app.song.addChord(this.chord) : app.song.removeChord(this.chord));
+  }
+  toggleForChord(chord) {
+    this.chord = chord;
+    this.type.value = chord.type;
+    this.root.value = chord.root;
+    this.octave.value = String(chord.octave);
+    this.togglePopover({
+      source: chord
+    });
   }
 };
+var HTML2 = `
+<label>\u2B50<input type="checkbox" name="fav" /></label>
+<label>\u{1F3B6}<input type="checkbox" name="song" /></label>
+<label>Triad: <select name="type">
+  <option value="major">Major</option>
+  <option value="minor">Minor</option>
+  <option value="diminished">Diminished</option>
+  <option value="augmented">Augmented</option>
+</select></label>
+<label>Root: <select name="root"></select></label>
+<label>Octave: <select name="octave"></select></label>
+`;
 
 // index.ts
 customElements.define("ck-app", App);

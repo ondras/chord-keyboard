@@ -1,4 +1,4 @@
-export const NOTES = ["A", "B♭", "B", "C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯"] as const;
+export const NOTES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "B♭", "B"] as const;
 export type Note = typeof NOTES[number];
 
 export function noteToNumber(note: Note) {

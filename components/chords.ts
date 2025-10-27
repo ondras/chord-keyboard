@@ -6,8 +6,9 @@ import * as music from "./music.ts";
 export default class Chords extends HTMLElement {
 	protected layout = new Layout();
 	protected header = document.createElement("header");
-	protected get layoutSelect() { return this.querySelector<HTMLSelectElement>("header [name=layout]")!; }
-	protected get rootSelect() { return this.querySelector<HTMLSelectElement>("header [name=root]")!; }
+	protected get layoutSelect() { return this.header.querySelector<HTMLSelectElement>("[name=layout]")!; }
+	protected get rootSelect() { return this.header.querySelector<HTMLSelectElement>("[name=root]")!; }
+	protected get octaveSelect() { return this.header.querySelector<HTMLSelectElement>("[name=octave]")!; }
 
 	connectedCallback() {
 		const { header, layout,  } = this;
@@ -15,7 +16,7 @@ export default class Chords extends HTMLElement {
 
 		header.innerHTML = HEADER_HTML;
 
-		const { layoutSelect, rootSelect } = this;
+		const { layoutSelect, rootSelect, octaveSelect } = this;
 
 		layoutSelect.addEventListener("change", _ => {
 			layout.type = layoutSelect.value as (typeof layout.type);
@@ -27,6 +28,12 @@ export default class Chords extends HTMLElement {
 		rootSelect.value = layout.root;
 		rootSelect.addEventListener("change", _ => layout.root = rootSelect.value as music.Note)
 
+		for (let i=1;i<=7;i++) {
+			let option = new Option(`Oct. ${i}`, String(i));
+			octaveSelect.append(option);
+		}
+		octaveSelect.value = String(layout.octave);
+		octaveSelect.addEventListener("change", _ => layout.octave = Number(octaveSelect.value));
 	}
 }
 
@@ -40,4 +47,6 @@ const HEADER_HTML = `
 </select>
 
 <select name="root"></select>
+
+<select name="octave"></select>
 `;

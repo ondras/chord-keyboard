@@ -24,7 +24,10 @@ export default class Chord extends HTMLElement {
 	constructor() {
 		super();
 		this.addEventListener("pointerdown", e => this.onPointerDown(e));
-		this.addEventListener("click", e => this.onClick());
+		this.addEventListener("click", e => this.onClick(e));
+
+		// problem #1: kdyz ukazu na pointerdown, tak se pak schova na pointerup
+		// problem #2: kdyz udelam na click toggle, tak dalsi click ho nejdriv schova a pak zase ukaze
 	}
 
 	connectedCallback() {
@@ -41,7 +44,7 @@ export default class Chord extends HTMLElement {
 		return ChordTypes[this.type].map(note => note + base);
 	}
 
-	protected onClick() {
+	protected onClick(e: MouseEvent) {
 		const { app } = this;
 		if (app.mode == "play") { return; }
 		app.toggleMenu(this);

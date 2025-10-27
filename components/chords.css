@@ -7,6 +7,8 @@ ck-chords {
 
 	header {
 		flex: none;
+		display: flex;
+		justify-content: space-between;
 	}
 
 	ck-layout {

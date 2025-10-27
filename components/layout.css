@@ -20,9 +20,8 @@ ck-layout {
 			--dx: cos(var(--angle)) * var(--r) * var(--sx);
 			--dy: sin(var(--angle)) * var(--r) * var(--sy);
 
-			left: calc(50cqw + var(--dx));
-			top: calc(50cqh + var(--dy));
-			transform: translate(-50%, -50%);
+			left: calc(50cqw + var(--dx) - var(--chord-size)/2);
+			top: calc(50cqh + var(--dy) - var(--chord-size)/2);
 
 			&[type=major] { --r: 43cqmin; }
 			&[type=minor] { --r: 28cqmin; }
