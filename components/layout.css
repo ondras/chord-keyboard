@@ -7,11 +7,11 @@ ck-layout {
 		--sy: 1;
 
 		@container app (orientation: portrait) {
-			--sy: calc((100cqh - var(--nav-size)) / 100cqw) * 0.8;
+			--sy: calc((100cqh - var(--nav-size)) / 100cqw) * 0.9;
 		}
 
 		@container app (orientation: landscape) {
-			--sy: calc((100cqw - var(--nav-size)) / 100cqh) * 0.8;
+			--sy: calc((100cqw - var(--nav-size)) / 100cqh) * 0.9;
 		}
 
 		ck-chord {

@@ -1,8 +1,10 @@
 ck-menu {
+	&:popover-open { display: flex; }
+
 	margin: 0;
 	inset: auto;
 	position-area: right span-bottom;
+	position-try-fallbacks: flip-inline;
 	border: none;
-	&:popover-open { display: flex; }
 	flex-direction: column;
 }
