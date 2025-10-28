@@ -9,7 +9,6 @@ export function numberToNote(number: number) {
 	return NOTES[number % NOTES.length];
 }
 
-
 export const ChordTypes = {
 	"major": [0, 4, 7],
 	"minor": [0, 3, 7],

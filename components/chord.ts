@@ -66,6 +66,18 @@ export default class Chord extends HTMLElement {
 	}
 
 	protected updateLabel() {
-		this.textContent = `(${this.octave}) ${this.root} ${this.type}`;
+		this.innerHTML = `(${this.octave}) ${formatLabel(this)}`;
 	}
+}
+
+
+const TYPE_SUFFIX: Record<ChordType, string> = {
+	"major": "",
+	"minor": "m",
+	"augmented": "+",
+	"diminished": "<sup>o</sup>",
+}
+
+function formatLabel(chord: Chord) {
+	return `${chord.root}${TYPE_SUFFIX[chord.type]}`;
 }

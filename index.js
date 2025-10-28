@@ -366,9 +366,18 @@ var Chord = class extends HTMLElement {
     this.app.play(this);
   }
   updateLabel() {
-    this.textContent = `(${this.octave}) ${this.root} ${this.type}`;
+    this.innerHTML = `(${this.octave}) ${formatLabel(this)}`;
   }
 };
+var TYPE_SUFFIX = {
+  "major": "",
+  "minor": "m",
+  "augmented": "+",
+  "diminished": "<sup>o</sup>"
+};
+function formatLabel(chord) {
+  return `${chord.root}${TYPE_SUFFIX[chord.type]}`;
+}
 
 // components/layout.ts
 var DEFAULT_ROOT2 = "C";
