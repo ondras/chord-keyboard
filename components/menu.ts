@@ -14,16 +14,30 @@ export default class Menu extends HTMLElement {
 	toggleForChord(chord: Chord) {
 		const { app } = this;
 
+		let isFav = app.fav.hasChord(chord);
+		let isSong = app.song.hasChord(chord);
+
 		let items = [
-			app.fav.hasChord(chord) ? buildRemove(chord, this, app.fav) : buildAdd(chord, this, app.fav),
-			app.song.hasChord(chord) ? buildRemove(chord, this, app.song) : buildAdd(chord, this, app.song),
-			buildDuplicate(chord),
+			!isFav ? buildAdd(chord, this, app.fav) : null,
+			!isSong ? buildAdd(chord, this, app.song) : null,
+
+			...(isFav ? [
+				buildRemove(chord, this, app.fav),
+				buildDuplicate(chord, this, app.fav)
+			] : []),
+
+			 ...(isSong ? [
+				buildRemove(chord, this, app.song),
+				buildDuplicate(chord, this, app.song)
+			] : []),
+
 			buildType(chord),
 			buildRoot(chord),
 			buildOctave(chord)
-		].map(item => item);
+		];
 
-		this.replaceChildren(...items);
+		let nodes = items.filter(item => item) as HTMLElement[];
+		this.replaceChildren(...nodes);
 
 		this.togglePopover({source:chord});
 	}
@@ -65,11 +79,13 @@ function buildRemove(chord: Chord, popover: HTMLElement, what: typeof App.protot
 	return button;
 }
 
-function buildDuplicate(chord: Chord) {
+function buildDuplicate(chord: Chord, popover: HTMLElement, what: typeof App.prototype.fav | typeof App.prototype.song) {
 	let button = document.createElement("button");
 	button.append("➕ Clone");
 	button.addEventListener("click", _ => {
-		let clone = chord.cloneNode(true);
+		let clone = chord.cloneNode(true) as Chord;
+		what.addChord(clone);
+		popover.hidePopover();
 	});
 	return button;
 }

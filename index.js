@@ -567,15 +567,25 @@ var Menu = class extends HTMLElement {
   }
   toggleForChord(chord) {
     const { app } = this;
+    let isFav = app.fav.hasChord(chord);
+    let isSong = app.song.hasChord(chord);
     let items = [
-      app.fav.hasChord(chord) ? buildRemove(chord, this, app.fav) : buildAdd(chord, this, app.fav),
-      app.song.hasChord(chord) ? buildRemove(chord, this, app.song) : buildAdd(chord, this, app.song),
-      buildDuplicate(chord),
+      !isFav ? buildAdd(chord, this, app.fav) : null,
+      !isSong ? buildAdd(chord, this, app.song) : null,
+      ...isFav ? [
+        buildRemove(chord, this, app.fav),
+        buildDuplicate(chord, this, app.fav)
+      ] : [],
+      ...isSong ? [
+        buildRemove(chord, this, app.song),
+        buildDuplicate(chord, this, app.song)
+      ] : [],
       buildType(chord),
       buildRoot(chord),
       buildOctave(chord)
-    ].map((item) => item);
-    this.replaceChildren(...items);
+    ];
+    let nodes = items.filter((item) => item);
+    this.replaceChildren(...nodes);
     this.togglePopover({
       source: chord
     });
@@ -608,11 +618,13 @@ function buildRemove(chord, popover, what) {
   });
   return button;
 }
-function buildDuplicate(chord) {
+function buildDuplicate(chord, popover, what) {
   let button = document.createElement("button");
   button.append("\u2795 Clone");
   button.addEventListener("click", (_) => {
     let clone = chord.cloneNode(true);
+    what.addChord(clone);
+    popover.hidePopover();
   });
   return button;
 }
