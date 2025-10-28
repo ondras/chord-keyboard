@@ -31,3 +31,19 @@ export function findChordType(numbers: number[]): ChordType {
 	}
 	throw new Error("FIXME")
 }
+
+export function buildRootSelect() {
+	let select = document.createElement("select");
+	let options = NOTES.map(note => new Option(note));
+	select.append(...options);
+	return select;
+}
+
+export function buildOctaveSelect() {
+	let select = document.createElement("select");
+	for (let i=1;i<=7;i++) {
+		let option = new Option(`Oct. ${i}`, String(i));
+		select.append(option);
+	}
+	return select;
+}

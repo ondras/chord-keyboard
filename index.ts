@@ -2,8 +2,8 @@ import App from "./components/app.ts";
 import Chord from "./components/chord.ts";
 import Layout from "./components/layout.ts";
 import Chords from "./components/chords.ts";
-import Song from "./components/fav.ts";
-import Fav from "./components/song.ts";
+import Song from "./components/song.ts";
+import Fav from "./components/fav.ts";
 import Menu from "./components/menu.ts";
 
 

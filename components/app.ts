@@ -16,7 +16,7 @@ const DEFAULT_MODE: Mode = "edit";
 export default class App extends HTMLElement {
 	static get observedAttributes() { return ["mode"]; }
 
-	protected output: MIDIOutput = new Synth();
+	protected outputs: MIDIOutput[] = [];
 	protected playingNotes = new Map<number, number>();
 
 	get fav() { return this.querySelector<Fav>("ck-fav")!; }
@@ -33,9 +33,17 @@ export default class App extends HTMLElement {
 		window.addEventListener("hashchange", _ => this.loadState())
 	}
 
-	connectedCallback() {
+	async connectedCallback() {
 		this.innerHTML = HTML;
+
+		this.querySelector(`[href="#fav"] span`)!.append(this.fav.icon);
+		this.querySelector(`[href="#song"] span`)!.append(this.song.icon);
+
 		this.loadState();
+
+		let midiAccess = await midi.requestAccess();
+
+		this.outputs = [new Synth(), ...midiAccess.outputs.values()];
 	}
 
 	play(chord: Chord) {
@@ -51,12 +59,12 @@ export default class App extends HTMLElement {
 	}
 
 	protected playNote(note: number) {
-		const { playingNotes, output } = this;
+		const { playingNotes, outputs } = this;
 		let current = playingNotes.get(note) || 0;
 
 		if (!current) { // zacit hrat
 			let midiMessage = [midi.NOTE_ON+channel, note, 100];
-			output.send(midiMessage);
+			outputs.forEach(output => output.send(midiMessage));
 		}
 
 		current++;
@@ -64,7 +72,7 @@ export default class App extends HTMLElement {
 	}
 
 	protected stopNote(note: number) {
-		const { playingNotes, output } = this;
+		const { playingNotes, outputs } = this;
 		let current = playingNotes.get(note) || 0;
 		if (!current) { return; } // divny, nema se stavat
 
@@ -73,7 +81,7 @@ export default class App extends HTMLElement {
 
 		if (!current) { // prestat hrat
 			let midiMessage = [midi.NOTE_OFF+channel, note, 100];
-			output.send(midiMessage);
+			outputs.forEach(output => output.send(midiMessage));
 		}
 	}
 
@@ -98,8 +106,8 @@ const HTML = `
 <ck-mode>mode</ck-mode>
 <nav>
 	<a href="#chords"><span>🎹</span>Chords</a>
-	<a href="#song"><span>🎶</span>Song</a>
-	<a href="#fav"><span>⭐</span>Favorites</a>
+	<a href="#song"><span></span>Song</a>
+	<a href="#fav"><span></span>Favorites</a>
 </nav>
 <ck-menu></ck-menu>
 `;

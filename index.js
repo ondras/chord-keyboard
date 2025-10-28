@@ -4,6 +4,9 @@ var NOTE_OFF = 128;
 function noteNumberToFrequency(n) {
   return 440 * 2 ** ((n - 69) / 12);
 }
+async function requestAccess() {
+  return navigator.requestMIDIAccess();
+}
 
 // components/synth.ts
 var ATTACK = 0.05;
@@ -93,7 +96,7 @@ var App = class extends HTMLElement {
       "mode"
     ];
   }
-  output = new Synth();
+  outputs = [];
   playingNotes = /* @__PURE__ */ new Map();
   get fav() {
     return this.querySelector("ck-fav");
@@ -117,9 +120,16 @@ var App = class extends HTMLElement {
     super();
     window.addEventListener("hashchange", (_) => this.loadState());
   }
-  connectedCallback() {
+  async connectedCallback() {
     this.innerHTML = HTML;
+    this.querySelector(`[href="#fav"] span`).append(this.fav.icon);
+    this.querySelector(`[href="#song"] span`).append(this.song.icon);
     this.loadState();
+    let midiAccess = await requestAccess();
+    this.outputs = [
+      new Synth(),
+      ...midiAccess.outputs.values()
+    ];
   }
   play(chord) {
     chord.notes.forEach((note) => this.playNote(note));
@@ -131,7 +141,7 @@ var App = class extends HTMLElement {
     this.menu.toggleForChord(chord);
   }
   playNote(note) {
-    const { playingNotes, output } = this;
+    const { playingNotes, outputs } = this;
     let current = playingNotes.get(note) || 0;
     if (!current) {
       let midiMessage = [
@@ -139,13 +149,13 @@ var App = class extends HTMLElement {
         note,
         100
       ];
-      output.send(midiMessage);
+      outputs.forEach((output) => output.send(midiMessage));
     }
     current++;
     playingNotes.set(note, current);
   }
   stopNote(note) {
-    const { playingNotes, output } = this;
+    const { playingNotes, outputs } = this;
     let current = playingNotes.get(note) || 0;
     if (!current) {
       return;
@@ -158,7 +168,7 @@ var App = class extends HTMLElement {
         note,
         100
       ];
-      output.send(midiMessage);
+      outputs.forEach((output) => output.send(midiMessage));
     }
   }
   loadState() {
@@ -180,8 +190,8 @@ var HTML = `
 <ck-mode>mode</ck-mode>
 <nav>
 	<a href="#chords"><span>\u{1F3B9}</span>Chords</a>
-	<a href="#song"><span>\u{1F3B6}</span>Song</a>
-	<a href="#fav"><span>\u2B50</span>Favorites</a>
+	<a href="#song"><span></span>Song</a>
+	<a href="#fav"><span></span>Favorites</a>
 </nav>
 <ck-menu></ck-menu>
 `;
@@ -264,6 +274,20 @@ function findChordType(numbers) {
     }
   }
   throw new Error("FIXME");
+}
+function buildRootSelect() {
+  let select = document.createElement("select");
+  let options = NOTES.map((note) => new Option(note));
+  select.append(...options);
+  return select;
+}
+function buildOctaveSelect() {
+  let select = document.createElement("select");
+  for (let i = 1; i <= 7; i++) {
+    let option = new Option(`Oct. ${i}`, String(i));
+    select.append(option);
+  }
+  return select;
 }
 
 // components/chord.ts
@@ -472,21 +496,18 @@ var Chords = class extends HTMLElement {
     const { header, layout } = this;
     this.replaceChildren(header, layout);
     header.innerHTML = HEADER_HTML;
-    const { layoutSelect, rootSelect, octaveSelect } = this;
+    const { layoutSelect } = this;
     layoutSelect.addEventListener("change", (_) => {
       layout.type = layoutSelect.value;
       layoutSelect.value = "";
     });
-    let options = NOTES.map((note) => new Option(note));
-    rootSelect.append(...options);
+    let rootSelect = buildRootSelect();
     rootSelect.value = layout.root;
     rootSelect.addEventListener("change", (_) => layout.root = rootSelect.value);
-    for (let i = 1; i <= 7; i++) {
-      let option = new Option(`Oct. ${i}`, String(i));
-      octaveSelect.append(option);
-    }
+    let octaveSelect = buildOctaveSelect();
     octaveSelect.value = String(layout.octave);
     octaveSelect.addEventListener("change", (_) => layout.octave = Number(octaveSelect.value));
+    header.append(rootSelect, octaveSelect);
   }
 };
 var HEADER_HTML = `
@@ -497,33 +518,41 @@ var HEADER_HTML = `
   <option value="triads-minor-natural">Min scale triads natural</option>
   <option value="triads-minor-harmonic">Min scale triads harmonic</option>
 </select>
-
-<select name="root"></select>
-
-<select name="octave"></select>
 `;
-
-// components/fav.ts
-var Fav = class extends HTMLElement {
-  addChord(chord) {
-    this.append(chord.cloneNode(true));
-    this.pulse();
-  }
-  removeChord(chord) {
-    chord.remove();
-    this.pulse();
-  }
-  pulse() {
-  }
-};
 
 // components/song.ts
 var Song = class extends HTMLElement {
+  get icon() {
+    return "\u{1F3B6}";
+  }
   addChord(chord) {
     this.append(chord.cloneNode(true));
   }
   removeChord(chord) {
     chord.remove();
+  }
+  hasChord(chord) {
+    return chord.parentElement == this;
+  }
+};
+
+// components/fav.ts
+var Fav = class extends HTMLElement {
+  get icon() {
+    return "\u2B50";
+  }
+  addChord(chord) {
+    this.append(chord.cloneNode(true));
+    this.pulse();
+  }
+  removeChord(chord) {
+    chord.remove();
+    this.pulse();
+  }
+  hasChord(chord) {
+    return chord.parentElement == this;
+  }
+  pulse() {
   }
 };
 
@@ -532,66 +561,83 @@ var Menu = class extends HTMLElement {
   get app() {
     return this.closest("ck-app");
   }
-  chord;
-  get fav() {
-    return this.byName("fav");
-  }
-  get song() {
-    return this.byName("song");
-  }
-  get type() {
-    return this.byName("type");
-  }
-  get root() {
-    return this.byName("root");
-  }
-  get octave() {
-    return this.byName("octave");
-  }
-  byName(name) {
-    return this.querySelector(`[name=${name}]`);
-  }
   constructor() {
     super();
     this.popover = "auto";
   }
-  connectedCallback() {
-    this.innerHTML = HTML2;
-    const { app, fav, song, type, root, octave } = this;
-    type.addEventListener("change", (_) => this.chord.type = type.value);
-    root.addEventListener("change", (_) => this.chord.root = root.value);
-    octave.addEventListener("change", (_) => this.chord.octave = Number(octave.value));
-    fav.addEventListener("change", (_) => fav.checked ? app.fav.addChord(this.chord) : app.fav.removeChord(this.chord));
-    song.addEventListener("change", (_) => song.checked ? app.song.addChord(this.chord) : app.song.removeChord(this.chord));
-  }
   toggleForChord(chord) {
-    this.chord = chord;
-    this.type.value = chord.type;
-    this.root.value = chord.root;
-    this.octave.value = String(chord.octave);
+    const { app } = this;
+    let items = [
+      app.fav.hasChord(chord) ? buildRemove(chord, this, app.fav) : buildAdd(chord, this, app.fav),
+      app.song.hasChord(chord) ? buildRemove(chord, this, app.song) : buildAdd(chord, this, app.song),
+      buildDuplicate(chord),
+      buildType(chord),
+      buildRoot(chord),
+      buildOctave(chord)
+    ].map((item) => item);
+    this.replaceChildren(...items);
     this.togglePopover({
       source: chord
     });
   }
 };
-var HTML2 = `
-<label>\u2B50<input type="checkbox" name="fav" /></label>
-<label>\u{1F3B6}<input type="checkbox" name="song" /></label>
-<label>Triad: <select name="type">
-  <option value="major">Major</option>
-  <option value="minor">Minor</option>
-  <option value="diminished">Diminished</option>
-  <option value="augmented">Augmented</option>
-</select></label>
-<label>Root: <select name="root"></select></label>
-<label>Octave: <select name="octave"></select></label>
-`;
+function buildType(chord) {
+  let label = document.createElement("label");
+  let select = document.createElement("select");
+  select.append(new Option("Major", "major"), new Option("Minor", "minor"), new Option("Diminished", "diminished"), new Option("Augmented", "augmented"));
+  select.value = chord.type;
+  select.addEventListener("change", (_) => chord.type = select.value);
+  label.append("Triad:", select);
+  return label;
+}
+function buildAdd(chord, popover, what) {
+  let button = document.createElement("button");
+  button.append(`${what.icon} Add`);
+  button.addEventListener("click", (_) => {
+    what.addChord(chord);
+    popover.hidePopover();
+  });
+  return button;
+}
+function buildRemove(chord, popover, what) {
+  let button = document.createElement("button");
+  button.append("\u274C Remove");
+  button.addEventListener("click", (_) => {
+    what.removeChord(chord);
+    popover.hidePopover();
+  });
+  return button;
+}
+function buildDuplicate(chord) {
+  let button = document.createElement("button");
+  button.append("\u2795 Clone");
+  button.addEventListener("click", (_) => {
+    let clone = chord.cloneNode(true);
+  });
+  return button;
+}
+function buildRoot(chord) {
+  let label = document.createElement("label");
+  let select = buildRootSelect();
+  select.value = chord.root;
+  select.addEventListener("change", (_) => chord.root = select.value);
+  label.append("Root:", select);
+  return label;
+}
+function buildOctave(chord) {
+  let label = document.createElement("label");
+  let select = buildOctaveSelect();
+  select.value = String(chord.octave);
+  select.addEventListener("change", (_) => chord.octave = Number(select.value));
+  label.append("Octave:", select);
+  return label;
+}
 
 // index.ts
 customElements.define("ck-app", App);
 customElements.define("ck-chord", Chord);
 customElements.define("ck-layout", Layout);
 customElements.define("ck-chords", Chords);
-customElements.define("ck-fav", Song);
-customElements.define("ck-song", Fav);
+customElements.define("ck-fav", Fav);
+customElements.define("ck-song", Song);
 customElements.define("ck-menu", Menu);

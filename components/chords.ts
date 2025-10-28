@@ -16,24 +16,22 @@ export default class Chords extends HTMLElement {
 
 		header.innerHTML = HEADER_HTML;
 
-		const { layoutSelect, rootSelect, octaveSelect } = this;
+		const { layoutSelect } = this;
 
 		layoutSelect.addEventListener("change", _ => {
 			layout.type = layoutSelect.value as (typeof layout.type);
 			layoutSelect.value = "";
 		});
 
-		let options = music.NOTES.map(note => new Option(note));
-		rootSelect.append(...options);
+		let rootSelect = music.buildRootSelect();
 		rootSelect.value = layout.root;
 		rootSelect.addEventListener("change", _ => layout.root = rootSelect.value as music.Note)
 
-		for (let i=1;i<=7;i++) {
-			let option = new Option(`Oct. ${i}`, String(i));
-			octaveSelect.append(option);
-		}
+		let octaveSelect = music.buildOctaveSelect();
 		octaveSelect.value = String(layout.octave);
 		octaveSelect.addEventListener("change", _ => layout.octave = Number(octaveSelect.value));
+
+		header.append(rootSelect, octaveSelect);
 	}
 }
 
@@ -45,8 +43,4 @@ const HEADER_HTML = `
   <option value="triads-minor-natural">Min scale triads natural</option>
   <option value="triads-minor-harmonic">Min scale triads harmonic</option>
 </select>
-
-<select name="root"></select>
-
-<select name="octave"></select>
 `;
