@@ -89,13 +89,7 @@ function destroyOscillator(audioNodes) {
 
 // components/app.ts
 var channel = 0;
-var DEFAULT_MODE = "edit";
 var App = class extends HTMLElement {
-  static get observedAttributes() {
-    return [
-      "mode"
-    ];
-  }
   outputs = [];
   playingNotes = /* @__PURE__ */ new Map();
   get fav() {
@@ -109,12 +103,6 @@ var App = class extends HTMLElement {
   }
   get menu() {
     return this.querySelector("ck-menu");
-  }
-  get mode() {
-    return this.getAttribute("mode") || DEFAULT_MODE;
-  }
-  set mode(mode) {
-    this.setAttribute("mode", mode);
   }
   constructor() {
     super();
@@ -187,7 +175,6 @@ var HTML = `
 	<ck-song></ck-song>
 	<ck-fav></ck-fav>
 </main>
-<ck-mode>mode</ck-mode>
 <nav>
 	<a href="#chords"><span>\u{1F3B9}</span>Chords</a>
 	<a href="#song"><span></span>Song</a>
@@ -323,39 +310,50 @@ var Chord = class extends HTMLElement {
   set type(type) {
     this.setAttribute("type", type);
   }
+  label = document.createElement("span");
+  config = document.createElement("button");
   constructor() {
     super();
     this.addEventListener("pointerdown", (e) => this.onPointerDown(e));
-    this.addEventListener("click", (e) => this.onClick(e));
+    this.config.addEventListener("click", (e) => this.onClickConfig(e));
   }
   connectedCallback() {
+    const { label, config } = this;
+    this.replaceChildren(label, config);
+    config.textContent = "\u2699\uFE0F";
     this.updateLabel();
+    this.updateOctave();
   }
   attributeChangedCallback(name, oldValue, newValue) {
-    this.updateLabel();
+    switch (name) {
+      case "root":
+      case "type":
+        this.updateLabel();
+        break;
+      case "octave":
+        this.updateOctave();
+        break;
+    }
   }
   get notes() {
     let base = (this.octave + 1) * 12;
     base += noteToNumber(this.root);
     return ChordTypes[this.type].map((note) => note + base);
   }
-  onClick(e) {
-    const { app } = this;
-    if (app.mode == "play") {
-      return;
-    }
-    app.toggleMenu(this);
+  onClickConfig(e) {
+    this.app.toggleMenu(this);
   }
   onPointerDown(e) {
-    const { app } = this;
-    if (app.mode != "play") {
+    const { app, config } = this;
+    if (config.contains(e.target)) {
+      e.stopPropagation();
       return;
     }
     let ac = new AbortController();
     let { signal } = ac;
     let abort = () => {
       ac.abort();
-      this.app.stop(this);
+      app.stop(this);
     };
     this.addEventListener("pointerup", abort, {
       signal
@@ -363,10 +361,13 @@ var Chord = class extends HTMLElement {
     this.addEventListener("pointerleave", abort, {
       signal
     });
-    this.app.play(this);
+    app.play(this);
   }
   updateLabel() {
-    this.innerHTML = `(${this.octave}) ${formatLabel(this)}`;
+    this.label.innerHTML = formatLabel(this);
+  }
+  updateOctave() {
+    this.style.setProperty("--octave", String(this.octave));
   }
 };
 var TYPE_SUFFIX = {

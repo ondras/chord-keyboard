@@ -9,13 +9,7 @@ import Menu from "./menu.ts";
 
 const channel = 0;
 
-type Mode = "play" | "edit";
-const DEFAULT_MODE: Mode = "edit";
-
-
 export default class App extends HTMLElement {
-	static get observedAttributes() { return ["mode"]; }
-
 	protected outputs: MIDIOutput[] = [];
 	protected playingNotes = new Map<number, number>();
 
@@ -24,9 +18,6 @@ export default class App extends HTMLElement {
 	get chords() { return this.querySelector<Chords>("ck-chords")!; }
 
 	protected get menu() { return this.querySelector<Menu>("ck-menu")!; }
-
-	get mode(): Mode { return this.getAttribute("mode") as Mode || DEFAULT_MODE; }
-	set mode(mode: Mode) { this.setAttribute("mode", mode); }
 
 	constructor() {
 		super();
@@ -103,7 +94,6 @@ const HTML = `
 	<ck-song></ck-song>
 	<ck-fav></ck-fav>
 </main>
-<ck-mode>mode</ck-mode>
 <nav>
 	<a href="#chords"><span>🎹</span>Chords</a>
 	<a href="#song"><span></span>Song</a>

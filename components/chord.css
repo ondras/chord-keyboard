@@ -5,4 +5,35 @@ ck-chord {
 	border-radius: 8px;
 	box-shadow: 0 0 3px #000;
 	font-size: 14px;
+	text-align: center;
+	position: relative; /* kotva pro tlacitko */
+
+	--octave-dot: 3px;
+
+	--octave-gradient: repeating-linear-gradient(
+		to right,
+		red 0px,
+		red var(--octave-dot),
+		transparent var(--octave-dot),
+		transparent calc(2 * var(--octave-dot))
+	);
+	--octave-position: left 5px bottom 2px;
+	--octave-size: calc(2 * var(--octave-dot) * var(--octave)) var(--octave-dot);
+	--octave-background: var(--octave-gradient) var(--octave-position) / var(--octave-size) no-repeat;
+	background: var(--octave-background);
+
+
+	button {
+		position: absolute;
+		right: 0px;
+		bottom: 0px;
+		padding: 2px;
+		background: transparent;
+		border: none;
+		border-radius: 50%;
+
+		transition: background-color: 300ms;
+
+		&:hover { background-color: rgba(0 0 0 / 0.1); }
+	}
 }
