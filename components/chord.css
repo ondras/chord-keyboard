@@ -31,9 +31,8 @@ ck-chord {
 		background: transparent;
 		border: none;
 		border-radius: 50%;
+		transition: opacity 300ms;
 
-		transition: background-color: 300ms;
-
-		&:hover { background-color: rgba(0 0 0 / 0.1); }
+		&:not(:hover) { opacity: 0.5; }
 	}
 }
