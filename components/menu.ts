@@ -31,8 +31,8 @@ export default class Menu extends HTMLElement {
 				buildDuplicate(chord, this, app.song)
 			] : []),
 
-			buildType(chord),
 			buildRoot(chord),
+			buildType(chord),
 			buildOctave(chord),
 			buildSeventh(chord)
 		];
@@ -45,8 +45,8 @@ export default class Menu extends HTMLElement {
 }
 
 function buildType(chord: Chord) {
-	let label = document.createElement("label");
 	let select = document.createElement("select");
+	select.name = "type";
 	select.append(
 		new Option("Major", "major"),
 		new Option("Minor", "minor"),
@@ -55,9 +55,8 @@ function buildType(chord: Chord) {
 	);
 	select.value = chord.type;
 	select.addEventListener("change", _ => chord.type = select.value as music.ChordType);
-	label.append("Triad:", select);
 
-	return label;
+	return select;
 }
 
 function buildAdd(chord: Chord, popover: HTMLElement, what: typeof App.prototype.fav | typeof App.prototype.song) {
@@ -92,21 +91,17 @@ function buildDuplicate(chord: Chord, popover: HTMLElement, what: typeof App.pro
 }
 
 function buildRoot(chord: Chord) {
-	let label = document.createElement("label");
 	let select = music.buildRootSelect();
 	select.value = chord.root;
 	select.addEventListener("change", _ => chord.root = select.value as music.Note);
-	label.append("Root:", select);
-	return label;
+	return select;
 }
 
 function buildOctave(chord: Chord) {
-	let label = document.createElement("label");
 	let select = music.buildOctaveSelect();
 	select.value = String(chord.octave);
 	select.addEventListener("change", _ => chord.octave = Number(select.value));
-	label.append("Octave:", select);
-	return label;
+	return select;
 }
 
 function buildSeventh(chord: Chord) {

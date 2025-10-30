@@ -1,10 +1,21 @@
 ck-menu {
 	&:popover-open { display: flex; }
 
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 4px 0;
+	width: 160px;
+
 	margin: 0;
 	inset: auto;
 	position-area: right span-bottom;
 	position-try-fallbacks: flip-inline, flip-block;
 	border: none;
-	flex-direction: column;
+
+	button, select {
+		width: 100%;
+	}
+
+	[name=root] { width: 25%; }
+	[name=type] { flex: 75%; }
 }

@@ -291,12 +291,14 @@ var Sevenths = {
 };
 function buildRootSelect() {
   let select = document.createElement("select");
+  select.name = "root";
   let options = NOTES.map((note) => new Option(note));
   select.append(...options);
   return select;
 }
 function buildOctaveSelect() {
   let select = document.createElement("select");
+  select.name = "octave";
   for (let i = 1; i <= 7; i++) {
     let option = new Option(`Oct. ${i}`, String(i));
     select.append(option);
@@ -305,6 +307,7 @@ function buildOctaveSelect() {
 }
 function buildSeventhSelect() {
   let select = document.createElement("select");
+  select.name = "seventh";
   select.append(new Option("No 7th", ""), new Option("Major 7th", "major"), new Option("Minor 7th", "minor"), new Option("Diminished 7th", "diminished"));
   return select;
 }
@@ -701,8 +704,8 @@ var Menu = class extends HTMLElement {
         buildRemove(chord, this, app.song),
         buildDuplicate(chord, this, app.song)
       ] : [],
-      buildType(chord),
       buildRoot(chord),
+      buildType(chord),
       buildOctave(chord),
       buildSeventh(chord)
     ];
@@ -714,13 +717,12 @@ var Menu = class extends HTMLElement {
   }
 };
 function buildType(chord) {
-  let label = document.createElement("label");
   let select = document.createElement("select");
+  select.name = "type";
   select.append(new Option("Major", "major"), new Option("Minor", "minor"), new Option("Diminished", "diminished"), new Option("Augmented", "augmented"));
   select.value = chord.type;
   select.addEventListener("change", (_) => chord.type = select.value);
-  label.append("Triad:", select);
-  return label;
+  return select;
 }
 function buildAdd(chord, popover, what) {
   let button = document.createElement("button");
@@ -751,20 +753,16 @@ function buildDuplicate(chord, popover, what) {
   return button;
 }
 function buildRoot(chord) {
-  let label = document.createElement("label");
   let select = buildRootSelect();
   select.value = chord.root;
   select.addEventListener("change", (_) => chord.root = select.value);
-  label.append("Root:", select);
-  return label;
+  return select;
 }
 function buildOctave(chord) {
-  let label = document.createElement("label");
   let select = buildOctaveSelect();
   select.value = String(chord.octave);
   select.addEventListener("change", (_) => chord.octave = Number(select.value));
-  label.append("Octave:", select);
-  return label;
+  return select;
 }
 function buildSeventh(chord) {
   let select = buildSeventhSelect();

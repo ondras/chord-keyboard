@@ -40,6 +40,7 @@ export const Sevenths: Record<SeventhType, number> = {
 
 export function buildRootSelect() {
 	let select = document.createElement("select");
+	select.name = "root";
 	let options = NOTES.map(note => new Option(note));
 	select.append(...options);
 	return select;
@@ -47,6 +48,7 @@ export function buildRootSelect() {
 
 export function buildOctaveSelect() {
 	let select = document.createElement("select");
+	select.name = "octave";
 	for (let i=1;i<=7;i++) {
 		let option = new Option(`Oct. ${i}`, String(i));
 		select.append(option);
@@ -56,6 +58,7 @@ export function buildOctaveSelect() {
 
 export function buildSeventhSelect() {
 	let select = document.createElement("select");
+	select.name = "seventh";
 	select.append(
 		new Option("No 7th", ""),
 		new Option("Major 7th", "major"),
