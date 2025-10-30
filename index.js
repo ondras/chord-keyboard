@@ -1,20 +1,16 @@
 // components/midi.ts
 var NOTE_ON = 144;
 var NOTE_OFF = 128;
-function noteNumberToFrequency(n) {
-  return 440 * 2 ** ((n - 69) / 12);
-}
 async function requestAccess() {
   return navigator.requestMIDIAccess();
 }
 
-// components/synth.ts
-var ATTACK = 0.05;
-var RELEASE = 0.05;
+// components/sampler.ts
+var samples = /* @__PURE__ */ new Map();
 var Synth = class extends EventTarget {
-  id = "synth";
+  id = "sampler";
   manufacturer = "ondras";
-  name = "web audio synth";
+  name = "sample player";
   type = "output";
   version = "0.0.1";
   state = "connected";
@@ -37,54 +33,71 @@ var Synth = class extends EventTarget {
     this.output = compressor;
   }
   send(data, timestamp) {
-    let [status, note, velocity] = data;
+    let [status, midiNote, velocity] = data;
     switch (status & 240) {
       case NOTE_ON:
-        velocity ? this.noteOn(note) : this.noteOff(note);
+        velocity ? this.noteOn(midiNote) : this.noteOff(midiNote);
         break;
       case NOTE_OFF:
-        this.noteOff(note);
+        this.noteOff(midiNote);
         break;
     }
   }
-  noteOn(note) {
+  async noteOn(midiNote) {
     const { playing, ctx, output } = this;
-    if (playing.has(note)) {
+    if (playing.has(midiNote)) {
       return;
     }
-    let audioNodes = createOscillator(ctx, noteNumberToFrequency(note));
-    audioNodes.gain.connect(output);
-    playing.set(note, audioNodes);
+    let buffer = await getSampleBuffer(midiNote, ctx);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(output);
+    src.start();
+    playing.set(midiNote, src);
   }
-  noteOff(note) {
+  noteOff(midiNote) {
     const { playing } = this;
-    let audioNodes = playing.get(note);
-    if (!audioNodes) {
+    let audioNode = playing.get(midiNote);
+    if (!audioNode) {
       return;
     }
-    destroyOscillator(audioNodes);
-    playing.delete(note);
+    audioNode.stop();
+    playing.delete(midiNote);
   }
 };
-function createOscillator(ctx, frequency) {
-  let oscillator = ctx.createOscillator();
-  let gain = ctx.createGain();
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(1, ctx.currentTime + ATTACK);
-  oscillator.frequency.value = frequency;
-  oscillator.connect(gain);
-  oscillator.start();
-  return {
-    oscillator,
-    gain
-  };
+function getSampleBuffer(midiNote, ctx) {
+  if (samples.has(midiNote)) {
+    return samples.get(midiNote);
+  }
+  let { promise, resolve } = Promise.withResolvers();
+  samples.set(midiNote, promise);
+  let sampleName = getSampleName(midiNote);
+  let url = `https://raw.githubusercontent.com/fuhton/piano-mp3/refs/heads/master/piano-mp3/${sampleName}.mp3`;
+  fetch(url).then(async (response) => {
+    let buffer = await response.arrayBuffer();
+    let audioBuffer = await ctx.decodeAudioData(buffer);
+    resolve(audioBuffer);
+  });
+  return promise;
 }
-function destroyOscillator(audioNodes) {
-  const { oscillator, gain } = audioNodes;
-  const { currentTime } = gain.context;
-  gain.gain.setValueAtTime(1, currentTime);
-  gain.gain.linearRampToValueAtTime(0, currentTime + RELEASE);
-  oscillator.stop(currentTime + RELEASE);
+var NAMES = [
+  "C",
+  "Db",
+  "D",
+  "Eb",
+  "E",
+  "F",
+  "Gb",
+  "G",
+  "Ab",
+  "A",
+  "Bb",
+  "B"
+];
+function getSampleName(midiNote) {
+  let octave = Math.floor(midiNote / 12) - 1;
+  let note = midiNote % 12;
+  return `${NAMES[note]}${octave}`;
 }
 
 // components/app.ts
@@ -271,6 +284,11 @@ function findChordType(numbers) {
   }
   throw new Error("FIXME");
 }
+var Sevenths = {
+  "diminished": 9,
+  "minor": 10,
+  "major": 11
+};
 function buildRootSelect() {
   let select = document.createElement("select");
   let options = NOTES.map((note) => new Option(note));
@@ -283,6 +301,11 @@ function buildOctaveSelect() {
     let option = new Option(`Oct. ${i}`, String(i));
     select.append(option);
   }
+  return select;
+}
+function buildSeventhSelect() {
+  let select = document.createElement("select");
+  select.append(new Option("No 7th", ""), new Option("Major 7th", "major"), new Option("Minor 7th", "minor"), new Option("Diminished 7th", "diminished"));
   return select;
 }
 
@@ -298,7 +321,8 @@ var Chord = class extends HTMLElement {
     return [
       "root",
       "octave",
-      "type"
+      "type",
+      "seventh"
     ];
   }
   get octave() {
@@ -319,6 +343,12 @@ var Chord = class extends HTMLElement {
   set type(type) {
     this.setAttribute("type", type);
   }
+  get seventh() {
+    return this.getAttribute("seventh");
+  }
+  set seventh(seventh) {
+    seventh ? this.setAttribute("seventh", seventh) : this.removeAttribute("seventh");
+  }
   label = document.createElement("span");
   config = document.createElement("button");
   constructor() {
@@ -335,7 +365,8 @@ var Chord = class extends HTMLElement {
     return {
       type: this.type,
       octave: this.octave,
-      root: this.root
+      root: this.root,
+      seventh: this.seventh
     };
   }
   connectedCallback() {
@@ -347,6 +378,7 @@ var Chord = class extends HTMLElement {
     switch (name) {
       case "root":
       case "type":
+      case "seventh":
         this.updateLabel();
         this.updateHue();
         break;
@@ -354,6 +386,9 @@ var Chord = class extends HTMLElement {
         this.updateOctave();
         break;
     }
+    this.dispatchEvent(new Event("change", {
+      bubbles: true
+    }));
   }
   cloneNode(subtree) {
     let clone = super.cloneNode(subtree);
@@ -362,9 +397,14 @@ var Chord = class extends HTMLElement {
     return clone;
   }
   get notes() {
-    let base = (this.octave + 1) * 12;
-    base += noteToNumber(this.root);
-    return ChordTypes[this.type].map((note) => note + base);
+    const { octave, root, type, seventh } = this;
+    let base = (octave + 1) * 12;
+    base += noteToNumber(root);
+    let notes = ChordTypes[type].map((note) => note + base);
+    if (seventh) {
+      notes.push(base + Sevenths[seventh]);
+    }
+    return notes;
   }
   onClickConfig(e) {
     this.app.toggleMenu(this);
@@ -407,8 +447,20 @@ var TYPE_SUFFIX = {
   "augmented": "+",
   "diminished": "<sup>o</sup>"
 };
+var SEVENTH_SUFFIX = {
+  "diminished": "6",
+  "minor": "7",
+  "major": "M7"
+};
 function formatLabel(chord) {
-  return `${chord.root}${TYPE_SUFFIX[chord.type]}`;
+  let parts = [
+    chord.root,
+    TYPE_SUFFIX[chord.type]
+  ];
+  if (chord.seventh) {
+    parts.push(SEVENTH_SUFFIX[chord.seventh]);
+  }
+  return parts.join("");
 }
 
 // components/layout.ts
@@ -580,6 +632,10 @@ var Song = class extends HTMLElement {
 
 // components/fav.ts
 var Fav = class extends HTMLElement {
+  constructor() {
+    super();
+    this.addEventListener("change", (_) => this.save());
+  }
   get icon() {
     return "\u2B50";
   }
@@ -647,7 +703,8 @@ var Menu = class extends HTMLElement {
       ] : [],
       buildType(chord),
       buildRoot(chord),
-      buildOctave(chord)
+      buildOctave(chord),
+      buildSeventh(chord)
     ];
     let nodes = items.filter((item) => item);
     this.replaceChildren(...nodes);
@@ -708,6 +765,12 @@ function buildOctave(chord) {
   select.addEventListener("change", (_) => chord.octave = Number(select.value));
   label.append("Octave:", select);
   return label;
+}
+function buildSeventh(chord) {
+  let select = buildSeventhSelect();
+  select.value = String(chord.seventh || "");
+  select.addEventListener("change", (_) => chord.seventh = select.value || null);
+  return select;
 }
 
 // index.ts

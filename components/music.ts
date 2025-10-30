@@ -31,6 +31,13 @@ export function findChordType(numbers: number[]): ChordType {
 	throw new Error("FIXME")
 }
 
+export type SeventhType = "diminished" | "minor" | "major";
+export const Sevenths: Record<SeventhType, number> = {
+	"diminished": 9,
+	"minor": 10,
+	"major": 11
+}
+
 export function buildRootSelect() {
 	let select = document.createElement("select");
 	let options = NOTES.map(note => new Option(note));
@@ -44,5 +51,16 @@ export function buildOctaveSelect() {
 		let option = new Option(`Oct. ${i}`, String(i));
 		select.append(option);
 	}
+	return select;
+}
+
+export function buildSeventhSelect() {
+	let select = document.createElement("select");
+	select.append(
+		new Option("No 7th", ""),
+		new Option("Major 7th", "major"),
+		new Option("Minor 7th", "minor"),
+		new Option("Diminished 7th", "diminished")
+	)
 	return select;
 }

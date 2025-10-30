@@ -33,7 +33,8 @@ export default class Menu extends HTMLElement {
 
 			buildType(chord),
 			buildRoot(chord),
-			buildOctave(chord)
+			buildOctave(chord),
+			buildSeventh(chord)
 		];
 
 		let nodes = items.filter(item => item) as HTMLElement[];
@@ -106,4 +107,11 @@ function buildOctave(chord: Chord) {
 	select.addEventListener("change", _ => chord.octave = Number(select.value));
 	label.append("Octave:", select);
 	return label;
+}
+
+function buildSeventh(chord: Chord) {
+	let select = music.buildSeventhSelect();
+	select.value = String(chord.seventh || "");
+	select.addEventListener("change", _ => chord.seventh = select.value as music.SeventhType || null);
+	return select;
 }

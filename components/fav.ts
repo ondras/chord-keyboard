@@ -2,6 +2,11 @@ import Chord, { ChordData } from "./chord.ts";
 
 
 export default class Fav extends HTMLElement {
+	constructor() {
+		super();
+		this.addEventListener("change", _ => this.save());
+	}
+
 	get icon() { return "⭐"; }
 
 	connectedCallback() {

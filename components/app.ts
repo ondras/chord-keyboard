@@ -4,6 +4,7 @@ import Fav from "./fav.ts";
 import Chords from "./chords.ts";
 import Chord from "./chord.ts";
 import Synth from "./synth.ts";
+import Sampler from "./sampler.ts";
 import Menu from "./menu.ts";
 
 
@@ -34,9 +35,9 @@ export default class App extends HTMLElement {
 
 		try {
 			let midiAccess = await midi.requestAccess();
-			this.outputs = [new Synth(), ...midiAccess.outputs.values()];
+			this.outputs = [new Sampler(), ...midiAccess.outputs.values()];
 		} catch (e) {
-			this.outputs = [new Synth()];
+			this.outputs = [new Sampler()];
 		}
 	}
 

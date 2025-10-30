@@ -1,5 +1,5 @@
 import App from "./app.ts";
-import { ChordType, ChordTypes, Note, noteToNumber } from "./music.ts";
+import { ChordType, ChordTypes, SeventhType, Sevenths, Note, noteToNumber } from "./music.ts";
 
 
 const DEFAULT_ROOT: Note = "C";
@@ -10,12 +10,13 @@ export interface ChordData {
 	octave: number;
 	root: Note;
 	type: ChordType;
+	seventh: SeventhType | null;
 }
 
 export default class Chord extends HTMLElement {
 	get app() { return this.closest<App>("ck-app")!; }
 
-	static get observedAttributes() { return ["root", "octave", "type"]; }
+	static get observedAttributes() { return ["root", "octave", "type", "seventh"]; }
 
 	get octave() { return Number(this.getAttribute("octave")) || DEFAULT_OCTAVE; }
 	set octave(octave: number) {this.setAttribute("octave", String(octave)); }
@@ -25,6 +26,9 @@ export default class Chord extends HTMLElement {
 
 	get type(): ChordType { return this.getAttribute("type") as ChordType || DEFAULT_TYPE; }
 	set type(type: ChordType) {this.setAttribute("type", type); }
+
+	get seventh(): SeventhType | null { return this.getAttribute("seventh") as SeventhType; }
+	set seventh(seventh: SeventhType | null) { seventh ? this.setAttribute("seventh", seventh) : this.removeAttribute("seventh"); }
 
 	protected label = document.createElement("span");
 	protected config = document.createElement("button");
@@ -48,7 +52,8 @@ export default class Chord extends HTMLElement {
 		return {
 			type: this.type,
 			octave: this.octave,
-			root: this.root
+			root: this.root,
+			seventh: this.seventh
 		}
 	}
 
@@ -63,6 +68,7 @@ export default class Chord extends HTMLElement {
 		switch (name) {
 			case "root":
 			case "type":
+			case "seventh":
 				this.updateLabel();
 				this.updateHue();
 			break;
@@ -71,6 +77,8 @@ export default class Chord extends HTMLElement {
 				this.updateOctave();
 			break;
 		}
+
+		this.dispatchEvent(new Event("change", {bubbles:true}));
 	}
 
 	cloneNode(subtree: boolean) {
@@ -84,9 +92,12 @@ export default class Chord extends HTMLElement {
 	}
 
 	get notes(): number[] {
-		let base = (this.octave+1)*12;
-		base += noteToNumber(this.root);
-		return ChordTypes[this.type].map(note => note + base);
+		const { octave, root, type, seventh } = this;
+		let base = (octave+1)*12;
+		base += noteToNumber(root);
+		let notes = ChordTypes[type].map(note => note + base);
+		if (seventh) { notes.push(base + Sevenths[seventh]); }
+		return notes;
 	}
 
 	protected onClickConfig(e: MouseEvent) {
@@ -132,9 +143,22 @@ const TYPE_SUFFIX: Record<ChordType, string> = {
 	"major": "",
 	"minor": "m",
 	"augmented": "+",
-	"diminished": "<sup>o</sup>",
+	"diminished": "<sup>o</sup>"
+}
+
+const SEVENTH_SUFFIX: Record<SeventhType, string> = {
+	"diminished": "6",
+	"minor": "7",
+	"major": "M7"
 }
 
 function formatLabel(chord: Chord) {
-	return `${chord.root}${TYPE_SUFFIX[chord.type]}`;
+	let parts = [
+		chord.root,
+		TYPE_SUFFIX[chord.type]
+	];
+	if (chord.seventh) {
+		parts.push(SEVENTH_SUFFIX[chord.seventh]);
+	}
+	return parts.join("");
 }
