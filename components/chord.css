@@ -8,8 +8,19 @@ ck-chord {
 	position: relative; /* kotva pro tlacitko */
 	cursor: pointer;
 
+	--saturation: 85%;
+	--lightness: 70%;
+	&[type=major] {
+		--saturation: 100%;
+		--lightness: 60%;
+	}
+	&[type=minor] {
+		--saturation: 70%;
+		--lightness: 80%;
+	}
+
 	--octave-dot: 3px;
-	--octave-color: black;
+	--octave-color: rgba(0 0 0 / 0.7);
 	--octave-gradient: repeating-linear-gradient(
 		to right,
 		var(--octave-color) 0px,
@@ -20,7 +31,8 @@ ck-chord {
 	--octave-position: left 5px bottom 2px;
 	--octave-size: calc(2 * var(--octave-dot) * var(--octave)) var(--octave-dot);
 	--octave-background: var(--octave-gradient) var(--octave-position) / var(--octave-size) no-repeat;
-	background: var(--octave-background), hsl(var(--hue), 100%, 70%);
+	background: var(--octave-background), hsl(var(--hue), var(--saturation), var(--lightness));
+	outline: 1px solid rgba(0 0 0 / 0.5);
 
 	button {
 		position: absolute;

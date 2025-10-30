@@ -1,9 +1,11 @@
 ck-fav {
-	&:not([hidden]) { display: block; }
+	padding: 1rem;
+	&:not([hidden]) { display: flex; }
+	flex-wrap: wrap;
+	gap: 1rem;
 
 	&:empty::before {
 		content: "No chords added so far. Add them using the chord whell menu.";
-		padding: 1em;
 		display: block;
 	}
 }

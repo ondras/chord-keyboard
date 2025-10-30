@@ -355,6 +355,12 @@ var Chord = class extends HTMLElement {
         break;
     }
   }
+  cloneNode(subtree) {
+    let clone = super.cloneNode(subtree);
+    clone.style.removeProperty("--index");
+    delete clone.dataset.circle;
+    return clone;
+  }
   get notes() {
     let base = (this.octave + 1) * 12;
     base += noteToNumber(this.root);
@@ -478,6 +484,7 @@ function generateFifths(octave, root, type) {
     chord.type = type;
     chord.root = numberToNote(base + offset);
     chord.style.setProperty("--index", String(index));
+    chord.dataset.circle = type == "major" ? "large" : "small";
     return chord;
   });
 }

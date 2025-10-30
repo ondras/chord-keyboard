@@ -1,13 +1,12 @@
 ck-chords {
 	height: 100%;
 	&:not([hidden]) { display: flex; }
-
-	@container app (orientation: portrait) { flex-direction: column; }
-	@container app (orientation: landscape) { flex-direction: row; }
+	flex-direction: column;
 
 	header {
 		flex: none;
 		display: flex;
+
 		justify-content: space-between;
 	}
 

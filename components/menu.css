@@ -4,7 +4,7 @@ ck-menu {
 	margin: 0;
 	inset: auto;
 	position-area: right span-bottom;
-	position-try-fallbacks: flip-inline;
+	position-try-fallbacks: flip-inline, flip-block;
 	border: none;
 	flex-direction: column;
 }

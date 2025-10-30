@@ -11,7 +11,7 @@ ck-layout {
 		}
 
 		@container app (orientation: landscape) {
-			--sy: calc((100cqw - var(--nav-size)) / 100cqh) * 0.9;
+			--sx: calc((100cqw - var(--nav-size)) / 100cqh) * 0.9;
 		}
 
 		ck-chord {
@@ -23,8 +23,8 @@ ck-layout {
 			left: calc(50cqw + var(--dx) - var(--chord-size)/2);
 			top: calc(50cqh + var(--dy) - var(--chord-size)/2);
 
-			&[type=major] { --r: 43cqmin; }
-			&[type=minor] { --r: 28cqmin; }
+			&[data-circle=large] { --r: 43cqmin; }
+			&[data-circle=small] { --r: 28cqmin; }
 		}
 	}
 

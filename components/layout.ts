@@ -72,6 +72,7 @@ function generateFifths(octave: number, root: Note, type: ChordType) {
 		chord.type = type;
 		chord.root = numberToNote(base + offset);
 		chord.style.setProperty("--index", String(index));
+		chord.dataset.circle = (type == "major" ? "large" : "small");
 		return chord;
 	});
 }

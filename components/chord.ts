@@ -73,6 +73,16 @@ export default class Chord extends HTMLElement {
 		}
 	}
 
+	cloneNode(subtree: boolean) {
+		let clone = super.cloneNode(subtree) as typeof this;
+
+		// circle layout
+		clone.style.removeProperty("--index");
+		delete clone.dataset.circle;
+
+		return clone;
+	}
+
 	get notes(): number[] {
 		let base = (this.octave+1)*12;
 		base += noteToNumber(this.root);
