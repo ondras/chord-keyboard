@@ -3,25 +3,24 @@ ck-chord {
 	aspect-ratio: 1;
 	width: var(--chord-size);
 	border-radius: 8px;
-	box-shadow: 0 0 3px #000;
 	font-size: 14px;
 	text-align: center;
 	position: relative; /* kotva pro tlacitko */
+	cursor: pointer;
 
 	--octave-dot: 3px;
-
+	--octave-color: black;
 	--octave-gradient: repeating-linear-gradient(
 		to right,
-		red 0px,
-		red var(--octave-dot),
+		var(--octave-color) 0px,
+		var(--octave-color) var(--octave-dot),
 		transparent var(--octave-dot),
 		transparent calc(2 * var(--octave-dot))
 	);
 	--octave-position: left 5px bottom 2px;
 	--octave-size: calc(2 * var(--octave-dot) * var(--octave)) var(--octave-dot);
 	--octave-background: var(--octave-gradient) var(--octave-position) / var(--octave-size) no-repeat;
-	background: var(--octave-background);
-
+	background: var(--octave-background), hsl(var(--hue), 100%, 70%);
 
 	button {
 		position: absolute;

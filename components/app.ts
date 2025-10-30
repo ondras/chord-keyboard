@@ -32,9 +32,12 @@ export default class App extends HTMLElement {
 
 		this.loadState();
 
-		let midiAccess = await midi.requestAccess();
-
-		this.outputs = [new Synth(), ...midiAccess.outputs.values()];
+		try {
+			let midiAccess = await midi.requestAccess();
+			this.outputs = [new Synth(), ...midiAccess.outputs.values()];
+		} catch (e) {
+			this.outputs = [new Synth()];
+		}
 	}
 
 	play(chord: Chord) {
@@ -84,6 +87,8 @@ export default class App extends HTMLElement {
 			chords: this.chords,
 		}
 		Object.entries(modules).forEach(([key, module]) => module.hidden = (key != name));
+
+		[...this.querySelectorAll("a")].forEach(link => link.classList.toggle("active", link.href.endsWith(location.hash)));
 	}
 }
 

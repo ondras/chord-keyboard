@@ -6,6 +6,12 @@ const DEFAULT_ROOT: Note = "C";
 const DEFAULT_TYPE: ChordType = "major";
 const DEFAULT_OCTAVE = 4;
 
+export interface ChordData {
+	octave: number;
+	root: Note;
+	type: ChordType;
+}
+
 export default class Chord extends HTMLElement {
 	get app() { return this.closest<App>("ck-app")!; }
 
@@ -32,14 +38,25 @@ export default class Chord extends HTMLElement {
 		// problem #2: kdyz udelam na click toggle, tak dalsi click ho nejdriv schova a pak zase ukaze
 	}
 
+	static fromJSON(data: ChordData) {
+		let chord = new this();
+		Object.assign(chord, data);
+		return chord;
+	}
+
+	toJSON(): ChordData {
+		return {
+			type: this.type,
+			octave: this.octave,
+			root: this.root
+		}
+	}
+
 	connectedCallback() {
 		const { label, config } = this;
 
 		this.replaceChildren(label, config);
 		config.textContent = "⚙️";
-
-		this.updateLabel();
-		this.updateOctave();
 	}
 
 	attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -47,6 +64,7 @@ export default class Chord extends HTMLElement {
 			case "root":
 			case "type":
 				this.updateLabel();
+				this.updateHue();
 			break;
 
 			case "octave":
@@ -90,6 +108,12 @@ export default class Chord extends HTMLElement {
 
 	protected updateOctave() {
 		this.style.setProperty("--octave", String(this.octave));
+	}
+
+	protected updateHue() {
+		let number = noteToNumber(this.root);
+		let angle = number * 360/12;
+		this.style.setProperty("--hue", `${angle}deg`);
 	}
 }
 

@@ -113,11 +113,17 @@ var App = class extends HTMLElement {
     this.querySelector(`[href="#fav"] span`).append(this.fav.icon);
     this.querySelector(`[href="#song"] span`).append(this.song.icon);
     this.loadState();
-    let midiAccess = await requestAccess();
-    this.outputs = [
-      new Synth(),
-      ...midiAccess.outputs.values()
-    ];
+    try {
+      let midiAccess = await requestAccess();
+      this.outputs = [
+        new Synth(),
+        ...midiAccess.outputs.values()
+      ];
+    } catch (e) {
+      this.outputs = [
+        new Synth()
+      ];
+    }
   }
   play(chord) {
     chord.notes.forEach((note) => this.playNote(note));
@@ -167,6 +173,9 @@ var App = class extends HTMLElement {
       chords: this.chords
     };
     Object.entries(modules).forEach(([key, module]) => module.hidden = key != name);
+    [
+      ...this.querySelectorAll("a")
+    ].forEach((link) => link.classList.toggle("active", link.href.endsWith(location.hash)));
   }
 };
 var HTML = `
@@ -317,18 +326,29 @@ var Chord = class extends HTMLElement {
     this.addEventListener("pointerdown", (e) => this.onPointerDown(e));
     this.config.addEventListener("click", (e) => this.onClickConfig(e));
   }
+  static fromJSON(data) {
+    let chord = new this();
+    Object.assign(chord, data);
+    return chord;
+  }
+  toJSON() {
+    return {
+      type: this.type,
+      octave: this.octave,
+      root: this.root
+    };
+  }
   connectedCallback() {
     const { label, config } = this;
     this.replaceChildren(label, config);
     config.textContent = "\u2699\uFE0F";
-    this.updateLabel();
-    this.updateOctave();
   }
   attributeChangedCallback(name, oldValue, newValue) {
     switch (name) {
       case "root":
       case "type":
         this.updateLabel();
+        this.updateHue();
         break;
       case "octave":
         this.updateOctave();
@@ -368,6 +388,11 @@ var Chord = class extends HTMLElement {
   }
   updateOctave() {
     this.style.setProperty("--octave", String(this.octave));
+  }
+  updateHue() {
+    let number = noteToNumber(this.root);
+    let angle = number * 360 / 12;
+    this.style.setProperty("--hue", `${angle}deg`);
   }
 };
 var TYPE_SUFFIX = {
@@ -551,18 +576,41 @@ var Fav = class extends HTMLElement {
   get icon() {
     return "\u2B50";
   }
+  connectedCallback() {
+    this.load();
+  }
   addChord(chord) {
     this.append(chord.cloneNode(true));
+    this.save();
     this.pulse();
   }
   removeChord(chord) {
     chord.remove();
+    this.save();
     this.pulse();
   }
   hasChord(chord) {
     return chord.parentElement == this;
   }
+  get chords() {
+    return [
+      ...this.children
+    ].filter((ch) => ch instanceof Chord);
+  }
   pulse() {
+  }
+  save() {
+    let data = {
+      chords: this.chords
+    };
+    let str = JSON.stringify(data);
+    localStorage.setItem("fav", str);
+  }
+  load() {
+    let str = localStorage.getItem("fav") || "{}";
+    let data = JSON.parse(str);
+    let chords = data.chords.map((ch) => Chord.fromJSON(ch));
+    this.replaceChildren(...chords);
   }
 };
 

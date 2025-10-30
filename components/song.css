@@ -1,3 +1,9 @@
 ck-song {
 	&:not([hidden]) { display: block; }
+
+	&:empty::before {
+		content: "No chords added so far. Add them using the chord whell menu.";
+		padding: 1em;
+		display: block;
+	}
 }
